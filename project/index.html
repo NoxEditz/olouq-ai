@@ -1609,7 +1609,8 @@ function initOnboarding() {
     e.preventDefault();
     e.stopPropagation();
     isDragging = true;
-    startX = e.clientX - $sliderHandleWrap.getBoundingClientRect().left;
+    const rect = $sliderHandleWrap.parentElement.getBoundingClientRect();
+    startX = e.clientX - rect.left;
     $sliderHandle.style.transition = 'none';
     $sliderHandleWrap.style.transition = 'none';
   });
@@ -1618,7 +1619,7 @@ function initOnboarding() {
     if (!isDragging) return;
     e.preventDefault();
     const rect = $sliderHandleWrap.parentElement.getBoundingClientRect();
-    let newX = e.clientX - rect.left - 24; // 24 is half of handle width
+    let newX = e.clientX - rect.left - 24;
     if (newX < 0) newX = 0;
     if (newX > maxSlide) newX = maxSlide;
     
@@ -1632,7 +1633,7 @@ function initOnboarding() {
     $sliderHandle.style.transition = 'transform .15s ease';
     
     const currentTransform = $sliderHandleWrap.style.transform;
-    const match = currentTransform.match(/translateX\((\d+)px\)/);
+    const match = currentTransform.match(/translateX\(([\d.]+)px\)/);
     const currentX = match ? parseFloat(match[1]) : 0;
     
     if (currentX >= maxSlide - 20) {
@@ -1649,9 +1650,8 @@ function initOnboarding() {
   $sliderHandleWrap.addEventListener('touchstart', e => {
     e.preventDefault();
     isDragging = true;
-    const touch = e.touches[0];
     const rect = $sliderHandleWrap.parentElement.getBoundingClientRect();
-    startX = touch.clientX - rect.left - 24;
+    startX = e.touches[0].clientX - rect.left;
     $sliderHandle.style.transition = 'none';
     $sliderHandleWrap.style.transition = 'none';
   }, { passive: false });
@@ -1659,9 +1659,8 @@ function initOnboarding() {
   document.addEventListener('touchmove', e => {
     if (!isDragging) return;
     e.preventDefault();
-    const touch = e.touches[0];
     const rect = $sliderHandleWrap.parentElement.getBoundingClientRect();
-    let newX = touch.clientX - rect.left - 24;
+    let newX = e.touches[0].clientX - rect.left - 24;
     if (newX < 0) newX = 0;
     if (newX > maxSlide) newX = maxSlide;
     
@@ -1675,7 +1674,7 @@ function initOnboarding() {
     $sliderHandle.style.transition = 'transform .15s ease';
     
     const currentTransform = $sliderHandleWrap.style.transform;
-    const match = currentTransform.match(/translateX\((\d+)px\)/);
+    const match = currentTransform.match(/translateX\(([\d.]+)px\)/);
     const currentX = match ? parseFloat(match[1]) : 0;
     
     if (currentX >= maxSlide - 20) {
