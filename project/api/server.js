@@ -14,15 +14,16 @@ export default async function handler(req, res) {
   }
 
   const { messages } = req.body;
-  const API_KEY = process.env.GOOGLE_API_KEY;
+  
+  /**
+   * SMART FALLBACK:
+   * Works with both 'GOOGLE_API_KEY' and 'GEMINI_API_KEY' variable names on Vercel.
+   */
+  const API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 
   if (!API_KEY) {
-    return res.status(500).json({ error: "Missing GOOGLE_API_KEY on Vercel." });
+    return res.status(500).json({ error: "Missing API Key on Vercel. Please add GOOGLE_API_KEY in Settings." });
   }
-
-  // Extract instructions
-  const systemMsg = messages.find(m => m.role === 'system');
-  const SYS_TEXT = systemMsg ? systemMsg.content : "أنت مساعد ذكي.";
 
   // Format message history
   const userMessages = messages
@@ -40,30 +41,18 @@ export default async function handler(req, res) {
       };
     });
 
-  // Inject instructions into history for maximum compatibility
-  const contents = [
-    { role: 'user', parts: [{ text: `Instruction: ${SYS_TEXT}` }] },
-    { role: 'model', parts: [{ text: "فهمتك تماماً يا مستر بدر. أنا علوق النخل وجاهز لمساعدتك بالعامية المصرية وبكل احترافية! اتفضل اسألني في أي حاجة." }] },
-    ...userMessages
-  ];
-
   /**
-   * FALLBACK MODEL: 'gemini-pro'
-   * If gemini-1.5-flash is not found, it usually means the API key is older 
-   * or restricted. 'gemini-pro' is the most universally supported model name.
+   * THE "SOS RECORDS" MODEL NAME:
+   * Since this repo is confirmed working for you, we use its specific model string.
    */
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${API_KEY}`;
 
   try {
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents,
-        generationConfig: { 
-          maxOutputTokens: 2048, 
-          temperature: 0.85 
-        }
+        contents: userMessages
       })
     });
 
