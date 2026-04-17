@@ -9,17 +9,35 @@ export default async function handler(req) {
   // Gemini doesn't support 'system' role in the contents array. 
   // We filter it out and rely on the model understanding context, 
   // or you can prepend it to the first user message if needed.
+  const systemMsg = messages.find(m => m.role === 'system');
+  const system_instruction = systemMsg ? {
+    parts: { text: systemMsg.content }
+  } : undefined;
+
   const contents = messages
     .filter(m => m.role !== 'system')
-    .map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }));
+    .map(m => {
+      let parts = [];
+      if (Array.isArray(m.content)) {
+        parts = m.content;
+      } else {
+        parts = [{ text: m.content }];
+      }
+      return {
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts
+      };
+    });
+
+  const body = { contents };
+  if (system_instruction) {
+    body.system_instruction = system_instruction;
+  }
 
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${key}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents })
+    body: JSON.stringify(body)
   });
 
   return new Response(response.body, {
