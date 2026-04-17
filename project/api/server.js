@@ -11,7 +11,7 @@ export default async function handler(req) {
   // or you can prepend it to the first user message if needed.
   const systemMsg = messages.find(m => m.role === 'system');
   const system_instruction = systemMsg ? {
-    parts: { text: systemMsg.content }
+    parts: [{ text: systemMsg.content }]
   } : undefined;
 
   const contents = messages
