@@ -6,14 +6,12 @@ async function* streamChat({ messages }) {
   let response;
   
   try {
-    // 1. First attempt: trying the standard Vercel route
     response = await fetch('/api/server', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages })
     });
 
-    // 2. Fallback: If 404, try adding the .js extension explicitly
     if (response.status === 404) {
       response = await fetch('/api/server.js', {
         method: 'POST',
@@ -27,7 +25,6 @@ async function* streamChat({ messages }) {
 
   if (!response.ok) {
     const errorBody = await response.text();
-    // If it's still 404 after both tries, the folder structure is definitely wrong
     if (response.status === 404) {
       throw new Error("بدر AI مش لاقي ملف البرمجة. تأكد أن ملف server.js داخل مجلد اسمه api");
     }
@@ -43,28 +40,6 @@ async function* streamChat({ messages }) {
     if (done) break;
     
     buffer += decoder.decode(value, { stream: true });
-    
-    let lines = buffer.split('\n');
-    buffer = lines.pop(); 
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith('data:')) continue;
-      
-      const jsonStr = trimmed.replace('data: ', '');
-      if (jsonStr === '[DONE]') return;
-
-      try {
-        const data = JSON.parse(jsonStr);
-        // Supports both Gemini and standard OpenAI formats
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || data.choices?.[0]?.delta?.content;
-        if (text) yield text;
-      } catch (e) {
-        continue;
-      }
-    }
-  }
-}
 
     let lines = buffer.split('\n');
     buffer = lines.pop(); 
