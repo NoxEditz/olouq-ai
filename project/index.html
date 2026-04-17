@@ -21,26 +21,26 @@
    ROOT VARIABLES & RESET
 ═══════════════════════════════════════════════════ */
 :root {
-  --bg0:        #020c04;
-  --bg1:        #041208;
-  --bg2:        #071a0a;
-  --bg3:        #0a2010;
-  --card:       #081509;
-  --card-hover: #0c1e0d;
-  --border:     rgba(0,255,65,.12);
-  --border-md:  rgba(0,255,65,.25);
-  --border-hi:  rgba(0,255,65,.5);
-  --ng:         #00ff41;          /* neon green */
-  --nb:         #39ff14;          /* neon bright */
-  --nd:         #00cc2e;          /* neon dim */
-  --na:         #00ffaa;          /* neon aqua */
-  --glow:       rgba(0,255,65,.18);
-  --glow-hi:    rgba(0,255,65,.35);
-  --glow-sm:    rgba(0,255,65,.08);
-  --txt0:       #e2ffe6;
-  --txt1:       #9dd4a3;
-  --txt2:       #4f8a56;
-  --txt3:       #2d5232;
+  --bg0:        #070a08;
+  --bg1:        #0a0f0c;
+  --bg2:        #101813;
+  --bg3:        #16221a;
+  --card:       rgba(16, 24, 19, 0.6);
+  --card-hover: rgba(22, 34, 26, 0.8);
+  --border:     rgba(0, 255, 65, 0.1);
+  --border-md:  rgba(0, 255, 65, 0.2);
+  --border-hi:  rgba(0, 255, 65, 0.4);
+  --ng:         #00e676;          /* refined neon green */
+  --nb:         #69f0ae;          /* soft bright mint */
+  --nd:         #00bfa5;          /* modern teal/emerald */
+  --na:         #1de9b6;          /* aqua mint */
+  --glow:       rgba(0, 230, 118, 0.15);
+  --glow-hi:    rgba(0, 230, 118, 0.3);
+  --glow-sm:    rgba(0, 230, 118, 0.05);
+  --txt0:       #f0fdf4;
+  --txt1:       #bbf7d0;
+  --txt2:       #86efac;
+  --txt3:       #4ade80;
   --danger:     #ff3a5c;
   --warn:       #ffb800;
   --radius:     14px;
@@ -70,10 +70,10 @@ body {
 button { cursor: pointer; font-family: var(--font-ui); border: none; background: none; }
 textarea, input { font-family: var(--font-ui); }
 a { color: var(--ng); }
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--bg1); }
-::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--nd); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0, 230, 118, 0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 230, 118, 0.4); }
 .hidden { display: none !important; }
 .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
 
@@ -100,83 +100,168 @@ a { color: var(--ng); }
 }
 
 /* ═══════════════════════════════════════════════════
-   SETUP / ONBOARDING SCREEN
+   SLIDE TO UNLOCK / FIRST TIME ONBOARDING
 ═══════════════════════════════════════════════════ */
-#setup-screen {
-  position: fixed; inset: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: center;
+#onboarding-screen {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
   background: radial-gradient(ellipse at 50% 40%, #031807 0%, #020c04 65%);
+  transition: opacity .6s ease, transform .6s ease;
 }
-.setup-card {
-  width: min(440px, 94vw);
-  background: var(--card);
-  border: 1px solid var(--border-md);
-  border-radius: var(--radius-xl);
-  padding: 40px 36px 36px;
+#onboarding-screen.hidden {
+  opacity: 0; transform: scale(1.1); pointer-events: none;
+}
+.onboarding-title {
+  font-family: var(--font-hd); font-size: clamp(24px, 5vw, 36px);
+  font-weight: 900; color: var(--ng); letter-spacing: 4px;
+  text-shadow: 0 0 30px rgba(0,255,65,.6); margin-bottom: 12px;
+  animation: glowPulse 2s ease-in-out infinite;
+}
+.onboarding-subtitle {
+  font-size: 15px; color: var(--txt1); margin-bottom: 40px;
+  text-align: center; line-height: 1.6;
+}
+.slider-container {
+  width: min(340px, 90vw); position: relative;
+  background: var(--card); border: 1px solid var(--border-md);
+  border-radius: var(--radius-xl); padding: 8px;
   box-shadow: var(--shadow-ng), var(--shadow-card);
-  animation: scaleIn .45s cubic-bezier(.34,1.56,.64,1);
 }
-.setup-logo {
+.slider-track {
+  height: 56px; background: var(--bg2); border-radius: var(--radius-lg);
+  position: relative; overflow: visible;
   display: flex; align-items: center; justify-content: center;
-  gap: 12px; margin-bottom: 28px;
+  user-select: none; -webkit-user-select: none;
+  z-index: 0;
 }
-.setup-logo .hexagon {
-  width: 54px; height: 54px; position: relative;
+.slider-handle-wrap {
+  position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+  width: 48px; height: 48px; cursor: grab; touch-action: none;
+  z-index: 100 !important; user-select: none; -webkit-user-select: none;
+  pointer-events: auto !important;
+}
+.slider-handle {
+  width: 100%; height: 100%; border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--nd), var(--ng));
   display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #001a00; font-weight: 700;
+  box-shadow: 0 4px 20px rgba(0,255,65,.4), inset 0 0 15px rgba(255,255,255,.2);
+  transition: transform .15s ease; user-select: none; -webkit-user-select: none;
+  pointer-events: auto !important; z-index: 101 !important;
 }
-.setup-logo .hexagon svg { width: 54px; height: 54px; filter: drop-shadow(0 0 12px var(--ng)); }
-.setup-logo-text {
-  font-family: var(--font-hd); font-size: 28px; font-weight: 900;
-  color: var(--ng); letter-spacing: 3px;
-  text-shadow: 0 0 20px rgba(0,255,65,.5);
+.slider-handle:active { cursor: grabbing; transform: scale(.95); }
+.slider-progress {
+  position: absolute; left: 0; top: 0; height: 100%;
+  background: linear-gradient(90deg, rgba(0,255,65,.08), rgba(0,255,65,.15));
+  border-radius: var(--radius-lg); pointer-events: none !important; z-index: 1;
+  transition: width .1s ease;
 }
-.setup-tagline {
-  text-align: center; font-size: 15px; color: var(--txt1);
-  margin-bottom: 32px; line-height: 1.6; font-weight: 400;
+.slider-label {
+  font-size: 15px; color: var(--txt2); font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+  animation: shimmerText 1.8s ease-in-out infinite;
+  pointer-events: none !important; z-index: 2;
 }
-.setup-label {
-  font-size: 13px; color: var(--txt1); margin-bottom: 8px;
-  display: flex; align-items: center; gap: 6px; font-weight: 600;
+.slider-arrow-icon {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  color: var(--txt3); font-size: 18px; animation: bounceRight 1.4s ease-in-out infinite;
+  pointer-events: none !important; z-index: 2;
 }
-.setup-input-wrap { position: relative; margin-bottom: 10px; }
-.setup-input {
-  width: 100%; padding: 14px 48px 14px 16px;
+#ai-intro-modal {
+  position: fixed; inset: 0; z-index: 150;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(2,12,4,.85); backdrop-filter: blur(15px);
+  opacity: 0; pointer-events: none; transition: opacity .5s ease;
+}
+#ai-intro-modal.visible { opacity: 1; pointer-events: auto; }
+.intro-card {
+  width: min(520px, 92vw); max-height: 85vh; overflow-y: auto;
+  background: var(--card); border: 1px solid var(--border-md);
+  border-radius: var(--radius-xl); padding: 0;
+  box-shadow: 0 0 50px rgba(0,255,65,.25), var(--shadow-card);
+  animation: introSlideUp .6s cubic-bezier(.34,1.56,.64,1);
+  position: relative;
+}
+.intro-header {
+  padding: 28px 24px 16px; text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,255,65,.05), transparent);
+}
+.intro-robot-avatar {
+  width: 90px; height: 90px; margin: 0 auto 16px;
+  position: relative; animation: floatY 3s ease-in-out infinite;
+}
+.intro-robot-avatar svg {
+  width: 100%; height: 100%; filter: drop-shadow(0 0 25px var(--ng));
+}
+.intro-name {
+  font-family: var(--font-hd); font-size: 26px; font-weight: 900;
+  color: var(--ng); letter-spacing: 3px; text-shadow: 0 0 20px rgba(0,255,65,.5);
+  margin-bottom: 6px;
+}
+.intro-greeting {
+  font-size: 14px; color: var(--txt1); line-height: 1.6;
+}
+.intro-body { padding: 24px; }
+.intro-section { margin-bottom: 22px; }
+.intro-section-title {
+  font-size: 13px; color: var(--na); font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.intro-feature-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+}
+.intro-feature {
   background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--radius); color: var(--txt0); font-size: 14px;
-  transition: border-color var(--trans), box-shadow var(--trans);
-  outline: none;
-  direction: ltr; text-align: left;
+  border-radius: var(--radius); padding: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  transition: all var(--trans);
 }
-.setup-input:focus {
-  border-color: var(--ng);
-  box-shadow: 0 0 0 3px var(--glow-sm), 0 0 12px rgba(0,255,65,.15);
+.intro-feature:hover {
+  border-color: var(--border-md); background: var(--bg3);
+  transform: translateY(-2px);
 }
-.setup-input::placeholder { color: var(--txt3); }
-.toggle-key-btn {
-  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-  color: var(--txt2); padding: 4px; display: flex; align-items: center;
-  transition: color var(--trans);
+.intro-feature-icon { font-size: 20px; }
+.intro-feature-text { font-size: 12px; color: var(--txt1); line-height: 1.5; }
+.intro-tips {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
 }
-.toggle-key-btn:hover { color: var(--ng); }
-.setup-hint { font-size: 12px; color: var(--txt3); margin-bottom: 28px; }
-.setup-hint a { font-weight: 600; }
-.setup-btn {
-  width: 100%; padding: 14px;
+.intro-tip-item {
+  display: flex; gap: 10px; margin-bottom: 10px; font-size: 13px; color: var(--txt1);
+}
+.intro-tip-item:last-child { margin-bottom: 0; }
+.intro-tip-icon { flex-shrink: 0; color: var(--ng); }
+.intro-btn {
+  width: 100%; padding: 14px; margin-top: 8px;
   background: linear-gradient(135deg, var(--nd), var(--ng));
   color: #001a00; font-size: 16px; font-weight: 700;
   border-radius: var(--radius); letter-spacing: .5px;
   transition: all var(--trans); box-shadow: 0 4px 20px rgba(0,255,65,.3);
 }
-.setup-btn:hover:not(:disabled) {
+.intro-btn:hover {
   transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,255,65,.45);
 }
-.setup-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-.setup-error {
-  margin-top: 10px; padding: 10px 14px;
-  background: rgba(255,58,92,.1); border: 1px solid rgba(255,58,92,.3);
-  border-radius: var(--radius-sm); font-size: 13px; color: var(--danger);
-  text-align: center;
+
+@keyframes glowPulse {
+  0%, 100% { text-shadow: 0 0 20px rgba(0,255,65,.4); }
+  50% { text-shadow: 0 0 35px rgba(0,255,65,.7); }
 }
+@keyframes shimmerText {
+  0%, 100% { opacity: .6; }
+  50% { opacity: 1; }
+}
+@keyframes bounceRight {
+  0%, 100% { transform: translateY(-50%) translateX(0); }
+  50% { transform: translateY(-50%) translateX(4px); }
+}
+@keyframes introSlideUp {
+  from { opacity: 0; transform: translateY(40px) scale(.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
 
 /* ═══════════════════════════════════════════════════
    MAIN APP LAYOUT
@@ -189,11 +274,13 @@ a { color: var(--ng); }
 /* ── SIDEBAR ── */
 #sidebar {
   width: var(--sidebar-w);
-  background: linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 100%);
+  background: rgba(10, 15, 12, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-left: 1px solid var(--border);
   display: flex; flex-direction: column;
   flex-shrink: 0; overflow: hidden;
-  transition: transform var(--trans);
+  transition: transform var(--trans), width var(--trans);
   z-index: 20;
 }
 .sidebar-top {
@@ -432,27 +519,30 @@ a { color: var(--ng); }
 .msg-row.assistant .msg-body { align-items: flex-start; }
 
 .msg-bubble {
-  padding: 12px 16px; border-radius: var(--radius-lg);
+  padding: 14px 18px; border-radius: var(--radius-lg);
   font-size: 15px; line-height: 1.75; word-break: break-word;
   position: relative; white-space: pre-wrap;
+  transition: all var(--trans);
 }
 .msg-row.user .msg-bubble {
-  background: linear-gradient(135deg, #003f10, #005218);
-  border: 1px solid rgba(0,255,65,.2);
+  background: linear-gradient(135deg, #059669, #047857);
+  border: none;
   border-bottom-left-radius: var(--radius-sm);
   color: var(--txt0);
-  box-shadow: 0 3px 14px rgba(0,0,0,.3), inset 0 0 30px rgba(0,255,65,.04);
+  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.25);
 }
 .msg-row.assistant .msg-bubble {
-  background: var(--card);
-  border: 1px solid var(--border);
+  background: rgba(16, 24, 19, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-md);
   border-bottom-right-radius: var(--radius-sm);
   color: var(--txt0);
-  box-shadow: 0 3px 14px rgba(0,0,0,.3);
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
 }
 .msg-row.assistant .msg-bubble.streaming {
-  border-color: rgba(0,255,65,.2);
-  box-shadow: 0 3px 14px rgba(0,0,0,.3), 0 0 15px rgba(0,255,65,.06);
+  border-color: var(--ng);
+  box-shadow: 0 4px 24px rgba(0,0,0,.4), 0 0 20px var(--glow-hi);
 }
 
 /* Markdown inside bubbles */
@@ -541,10 +631,15 @@ a { color: var(--ng); }
    INPUT AREA
 ═══════════════════════════════════════════════════ */
 #input-area {
-  padding: 12px 16px 14px;
-  border-top: 1px solid var(--border);
-  background: rgba(2,12,4,.9); backdrop-filter: blur(12px);
+  padding: 16px 24px 24px;
+  background: transparent;
   flex-shrink: 0; z-index: 5;
+  position: relative;
+}
+#input-area::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(0deg, rgba(2,12,4,0.95) 0%, rgba(2,12,4,0) 100%);
+  pointer-events: none; z-index: -1;
 }
 
 /* File preview strip */
@@ -570,17 +665,28 @@ a { color: var(--ng); }
 
 /* Input row */
 .input-row {
-  display: flex; align-items: flex-end; gap: 8px;
+  display: flex; align-items: flex-end; gap: 10px;
+  background: rgba(16, 24, 19, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-xl);
+  padding: 8px 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 0 20px rgba(0,230,118,.05);
+  transition: all var(--trans);
+}
+.input-row:focus-within {
+  border-color: rgba(0,230,118,.4);
+  box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 0 30px rgba(0,230,118,.15);
 }
 .input-btn {
-  width: 42px; height: 42px; border-radius: var(--radius-sm);
+  width: 42px; height: 42px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; transition: all var(--trans); flex-shrink: 0;
-  border: 1px solid var(--border);
-  background: var(--card); color: var(--txt2);
+  border: none; background: transparent; color: var(--txt2);
 }
-.input-btn:hover { border-color: var(--ng); color: var(--ng); background: var(--card-hover); box-shadow: 0 0 10px var(--glow-sm); }
-.input-btn.active { border-color: var(--ng); color: var(--ng); background: var(--glow-sm); box-shadow: 0 0 12px var(--glow); }
+.input-btn:hover { color: var(--ng); background: rgba(0,230,118,.1); transform: scale(1.05); }
+.input-btn.active { color: var(--ng); background: rgba(0,230,118,.2); transform: scale(1.05); }
 .input-btn.recording {
   border-color: var(--danger); color: var(--danger);
   background: rgba(255,58,92,.08);
@@ -589,12 +695,9 @@ a { color: var(--ng); }
 
 .textarea-wrap {
   flex: 1; position: relative;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 14px; transition: all var(--trans);
+  background: transparent; border: none;
+  transition: all var(--trans);
   display: flex; align-items: flex-end;
-}
-.textarea-wrap:focus-within {
-  border-color: var(--border-md); box-shadow: 0 0 0 3px var(--glow-sm);
 }
 #message-input {
   flex: 1; background: transparent; border: none; outline: none;
@@ -606,17 +709,17 @@ a { color: var(--ng); }
 #message-input::placeholder { color: var(--txt3); }
 
 #send-btn {
-  width: 42px; height: 42px; border-radius: var(--radius-sm);
+  width: 42px; height: 42px; border-radius: 50%;
   background: linear-gradient(135deg, var(--nd), var(--ng));
   color: #001800; font-size: 18px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   transition: all var(--trans); border: none;
-  box-shadow: 0 4px 14px rgba(0,255,65,.25);
+  box-shadow: 0 4px 16px rgba(0,230,118,.3);
 }
 #send-btn:hover:not(:disabled) {
-  transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,255,65,.4);
+  transform: translateY(-2px) scale(1.05); box-shadow: 0 6px 24px rgba(0,230,118,.5);
 }
-#send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+#send-btn:disabled { opacity: .3; cursor: not-allowed; transform: scale(0.95); box-shadow: none; filter: grayscale(1); }
 
 .input-footer {
   display: flex; justify-content: center; margin-top: 8px;
@@ -664,58 +767,7 @@ a { color: var(--ng); }
 }
 .vo-stop-btn:hover { background: #e02245; transform: scale(1.04); }
 
-/* ═══════════════════════════════════════════════════
-   SETTINGS MODAL
-═══════════════════════════════════════════════════ */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 150;
-  background: rgba(0,0,0,.7); backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center;
-  animation: fadeIn .2s ease;
-}
-.modal-card {
-  background: var(--card); border: 1px solid var(--border-md);
-  border-radius: var(--radius-xl); padding: 32px;
-  width: min(420px, 94vw); box-shadow: var(--shadow-card), var(--shadow-ng);
-  animation: scaleIn .3s cubic-bezier(.34,1.56,.64,1);
-}
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 24px;
-}
-.modal-title { font-size: 18px; font-weight: 700; color: var(--ng); font-family: var(--font-hd); letter-spacing: 1px; }
-.modal-close {
-  width: 32px; height: 32px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--txt2); font-size: 18px;
-  transition: all var(--trans);
-}
-.modal-close:hover { background: var(--card-hover); color: var(--txt0); }
-.modal-label { font-size: 13px; color: var(--txt1); margin-bottom: 8px; font-weight: 600; }
-.modal-input {
-  width: 100%; padding: 12px 14px; background: var(--bg2);
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  color: var(--txt0); font-size: 14px; margin-bottom: 6px; outline: none;
-  transition: border-color var(--trans);
-  direction: ltr; text-align: left;
-}
-.modal-input:focus { border-color: var(--ng); }
-.modal-hint { font-size: 12px; color: var(--txt3); margin-bottom: 20px; }
-.modal-actions { display: flex; gap: 10px; }
-.btn-save {
-  flex: 1; padding: 11px;
-  background: linear-gradient(135deg, var(--nd), var(--ng));
-  color: #001800; font-size: 14px; font-weight: 700;
-  border-radius: var(--radius-sm); transition: all var(--trans);
-}
-.btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,255,65,.3); }
-.btn-danger {
-  padding: 11px 16px;
-  border: 1px solid rgba(255,58,92,.3); color: var(--danger);
-  border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
-  transition: all var(--trans);
-}
-.btn-danger:hover { background: rgba(255,58,92,.1); }
+
 
 /* ── Toast notification ── */
 #toast {
@@ -813,6 +865,15 @@ a { color: var(--ng); }
   .modal-card { padding: 24px 20px; }
 }
 
+@media (min-width: 769px) {
+  #sidebar.desktop-closed {
+    width: 0 !important;
+    border-left: none;
+    padding: 0;
+    overflow: hidden;
+  }
+}
+
 @media (max-width: 400px) {
   .setup-card { padding: 28px 20px 24px; }
   .welcome-title { font-size: 20px; }
@@ -828,65 +889,106 @@ a { color: var(--ng); }
 <div class="vignette"></div>
 
 <!-- ══════════════════════════════════
-     SETUP SCREEN
+     ONBOARDING / SLIDE TO UNLOCK SCREEN
 ══════════════════════════════════ -->
-<div id="setup-screen">
-  <div class="setup-card">
-    <div class="setup-logo">
-      <div class="hexagon">
-        <svg viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="27,3 50,15 50,39 27,51 4,39 4,15"
-            fill="#001a05" stroke="#00ff41" stroke-width="1.5"/>
-          <text x="27" y="34" text-anchor="middle"
-            font-family="Orbitron,monospace" font-size="22" font-weight="900"
-            fill="#00ff41">B</text>
-          <circle cx="27" cy="27" r="20" stroke="#00ff41"
-            stroke-width=".4" stroke-dasharray="4 3" opacity=".4"/>
-        </svg>
+<div id="onboarding-screen">
+  <h1 class="onboarding-title">BADR AI</h1>
+  <p class="onboarding-subtitle">مساعدك الذكي للثانوية العامة 🎓</p>
+  
+  <div class="slider-container">
+    <div class="slider-track" id="slider-track">
+      <span class="slider-label">اسحب لفتح →</span>
+      <div class="slider-progress" id="slider-progress"></div>
+      <div class="slider-arrow-icon">➜</div>
+      <div class="slider-handle-wrap" id="slider-handle-wrap">
+        <div class="slider-handle" id="slider-handle">⟡</div>
       </div>
-      <span class="setup-logo-text">BADR AI</span>
     </div>
-
-    <p class="setup-tagline">
-      مساعدك الذكي لمذاكرة الثانوية العامة المصرية 🎓<br>
-      أدخل مفتاح الـ API الخاص بك لتبدأ
-    </p>
-
-    <label class="setup-label">
-      <span>🔑</span> مفتاح Anthropic API
-    </label>
-    <div class="setup-input-wrap">
-      <input
-        type="password"
-        id="api-key-input"
-        class="setup-input"
-        placeholder="sk-ant-api03-..."
-        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      />
-      <button class="toggle-key-btn" id="toggle-key-visibility" aria-label="إظهار/إخفاء المفتاح">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-      </button>
-    </div>
-    <p class="setup-hint">
-      احصل على مفتاحك من
-      <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>
-      ← يتم حفظه محلياً في متصفحك فقط
-    </p>
-
-    <button class="setup-btn" id="setup-submit-btn" disabled>
-      ابدأ مع بدر AI ✨
-    </button>
-    <div id="setup-error" class="setup-error hidden"></div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════
+     AI INTRO MODAL
+══════════════════════════════════ -->
+<div id="ai-intro-modal">
+  <div class="intro-card">
+    <div class="intro-header">
+      <div class="intro-robot-avatar">
+        <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="45" cy="45" r="42" fill="#001a05" stroke="#00ff41" stroke-width="2"/>
+          <circle cx="45" cy="45" r="35" stroke="#00ff41" stroke-width=".8" stroke-dasharray="5 4" opacity=".5"/>
+          <ellipse cx="45" cy="38" rx="18" ry="14" fill="#003310" stroke="#00ff41" stroke-width="1.5"/>
+          <circle cx="38" cy="35" r="4" fill="#00ff41"/>
+          <circle cx="52" cy="35" r="4" fill="#00ff41"/>
+          <path d="M35 48 Q45 56 55 48" stroke="#00ff41" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <rect x="20" y="58" width="50" height="18" rx="6" fill="#002208" stroke="#00ff41" stroke-width="1.2"/>
+          <line x1="28" y1="64" x2="28" y2="70" stroke="#00ff41" stroke-width="1.5"/>
+          <line x1="36" y1="64" x2="36" y2="70" stroke="#00ff41" stroke-width="1.5"/>
+          <line x1="44" y1="64" x2="44" y2="70" stroke="#00ff41" stroke-width="1.5"/>
+          <line x1="52" y1="64" x2="52" y2="70" stroke="#00ff41" stroke-width="1.5"/>
+          <line x1="60" y1="64" x2="60" y2="70" stroke="#00ff41" stroke-width="1.5"/>
+          <polygon points="45,8 52,18 45,22 38,18" fill="#00ff41" opacity=".8"/>
+        </svg>
+      </div>
+      <h2 class="intro-name">أنا بدر AI</h2>
+      <p class="intro-greeting">مساعد ذكي وقوي جداً، متصمم ومطور بالكامل بواسطة بدر 🚀</p>
+    </div>
+    
+    <div class="intro-body">
+      <div class="intro-section">
+        <div class="intro-section-title">
+          <span>⚡</span> أنا أقدر أعمل إيه؟
+        </div>
+        <div class="intro-feature-grid">
+          <div class="intro-feature">
+            <span class="intro-feature-icon">🧠</span>
+            <span class="intro-feature-text">ذكاء اصطناعي جبار متدرب عشان يحل أعقد المشاكل البرمجية</span>
+          </div>
+          <div class="intro-feature">
+            <span class="intro-feature-icon">💻</span>
+            <span class="intro-feature-text">شرح الأكواد المعقدة وتبسيطها بأسلوب سهل جداً</span>
+          </div>
+          <div class="intro-feature">
+            <span class="intro-feature-icon">🐛</span>
+            <span class="intro-feature-text">المساعدة في اكتشاف الأخطاء (Debugging) وتصليحها</span>
+          </div>
+          <div class="intro-feature">
+            <span class="intro-feature-icon">💡</span>
+            <span class="intro-feature-text">إجابة سريعة جداً على أي سؤال في أي وقت</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="intro-section">
+        <div class="intro-section-title">
+          <span>📍</span> إزاي تستخدمني؟
+        </div>
+        <div class="intro-tips">
+          <div class="intro-tip-item">
+            <span class="intro-tip-icon">⌨️</span>
+            <span><strong>اكتب سؤالك:</strong> تحت في الشاشة، اكتب أي سؤال يخطر في بالك أو ارفع صورة</span>
+          </div>
+          <div class="intro-tip-item">
+            <span class="intro-tip-icon">🎙️</span>
+            <span><strong>استخدم صوتك:</strong> تقدر تسجل بصوتك وهفهمك وأرد عليك</span>
+          </div>
+          <div class="intro-tip-item">
+            <span class="intro-tip-icon">👨‍💻</span>
+            <span><strong>شُغل بدر:</strong> السيستم ده مبني ومطور بالكامل بواسطة بدر، عشان يديك أسرع وأقوى أداء!</span>
+          </div>
+        </div>
+      </div>
+      
+      <button class="intro-btn" id="intro-start-btn">يلا نبدأ! 🎉</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
      MAIN APP
 ══════════════════════════════════ -->
-<div id="app" class="hidden">
+<div id="app">
 
   <!-- Mobile sidebar backdrop -->
   <div id="sidebar-backdrop"></div>
@@ -920,17 +1022,10 @@ a { color: var(--ng); }
     </div>
 
     <div class="sidebar-footer">
-      <div class="sb-user-row">
-        <button id="settings-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-          </svg>
-          الإعدادات
-        </button>
+      <div class="sb-user-row" style="justify-content: center;">
         <div class="sb-status">
           <div class="status-dot"></div>
-          <span>متصل</span>
+          <span style="font-size: 13px;">بدر AI متصل وجاهز</span>
         </div>
       </div>
     </div>
@@ -1084,30 +1179,6 @@ a { color: var(--ng); }
   </div>
 </div>
 
-<!-- Settings Modal -->
-<div class="modal-overlay hidden" id="settings-modal">
-  <div class="modal-card">
-    <div class="modal-header">
-      <span class="modal-title">⚙ SETTINGS</span>
-      <button class="modal-close" id="close-settings">✕</button>
-    </div>
-
-    <p class="modal-label">🔑 مفتاح Anthropic API</p>
-    <input
-      type="password" id="settings-key-input"
-      class="modal-input" placeholder="sk-ant-api03-..."
-      autocomplete="off"
-    />
-    <p class="modal-hint">
-      يُحفظ محلياً في المتصفح فقط ولا يُرسل لأي جهة أخرى
-    </p>
-
-    <div class="modal-actions">
-      <button class="btn-save" id="save-settings-btn">حفظ التغييرات</button>
-      <button class="btn-danger" id="logout-btn" title="حذف المفتاح وتسجيل الخروج">تسجيل خروج</button>
-    </div>
-  </div>
-</div>
 
 <!-- Toast -->
 <div id="toast" class="hidden"></div>
@@ -1115,16 +1186,97 @@ a { color: var(--ng); }
 <!-- ═════════════════════════════════════════════════
      APPLICATION SCRIPT
 ═════════════════════════════════════════════════ -->
-<script type="module">
-import {
-  streamChat,
-  processImageFile,
-  buildMessageContent,
-  validateApiKey,
-  Storage,
-  APIError,
-  NetworkError,
-} from './api/chat.js';
+<script>
+// --- CHAT API LOGIC INLINED TO AVOID LOCAL CORS ERRORS ---
+const SYSTEM_PROMPT = `أنت "بدر AI" - مساعد ذكاء اصطناعي متطور، متصمم بواسطة بدر عشان يشرح الأكواد البرمجية ويساعد في حل المشاكل التقنية بأسلوب مبسط وواضح جداً. بترد بالعامية المصرية وبطريقة ودودة جداً.`;
+
+async function* streamChat({ messages }) {
+  const response = await fetch('/api/server', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages })
+  });
+  
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // Keep incomplete line in buffer for next iteration
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+      if (trimmed === 'data: [DONE]') continue;
+
+      try {
+        const data = JSON.parse(trimmed.substring(5));
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) yield text;
+      } catch (e) {
+        // Ignore malformed or empty chunks
+      }
+    }
+  }
+}
+
+const Storage = {
+  saveChats: arr => { try { localStorage.setItem(`badr_chats`, JSON.stringify(arr.slice(-50))); } catch {} },
+  loadChats: () => { try { return JSON.parse(localStorage.getItem(`badr_chats`) ?? '[]'); } catch { return []; } },
+  clearAll: () => { try { localStorage.clear(); } catch {} }
+};
+
+class APIError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'APIError';
+  }
+}
+
+class NetworkError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+async function processImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1];
+      resolve({ name: file.name, mediaType: file.type, data: base64, size: file.size });
+    };
+    reader.onerror = () => reject(new Error('فشل قراءة الصورة'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function buildMessageContent(text, images) {
+  let parts = [];
+  if (text) {
+    parts.push({ text: text });
+  }
+  if (images && images.length > 0) {
+    images.forEach(img => {
+      parts.push({
+        inlineData: {
+          mimeType: img.mediaType,
+          data: img.data
+        }
+      });
+    });
+  }
+  return parts.length > 0 ? parts : '';
+}
+// --------------------------------------------------------
 
 /* ─── Configure marked.js ─── */
 if (typeof marked !== 'undefined') {
@@ -1158,28 +1310,29 @@ const activeChat = () => state.chats.find(c => c.id === state.activeChatId);
    DOM REFS
 ═══════════════════════════ */
 const $  = id => document.getElementById(id);
-const $setup        = $('setup-screen');
-const $app          = $('app');
-const $setupInput   = $('api-key-input');
-const $setupBtn     = $('setup-submit-btn');
-const $setupError   = $('setup-error');
-const $msgList      = $('messages-list');
-const $msgContainer = $('messages-container');
-const $welcome      = $('welcome-screen');
-const $typingInd    = null;  // created dynamically
-const $input        = $('message-input');
-const $sendBtn      = $('send-btn');
-const $fileBtn      = $('file-btn');
-const $fileInput    = $('file-input');
-const $voiceBtn     = $('voice-btn');
-const $previewStrip = $('file-preview-strip');
-const $chatHistory  = $('chat-history');
-const $emptyMsg     = $('sb-empty-msg');
-const $voiceOverlay = $('voice-overlay');
-const $voTimer      = $('vo-timer');
-const $voTranscript = $('vo-transcript');
-const $settingsModal= $('settings-modal');
-const $settingsKey  = $('settings-key-input');
+const $onboarding     = $('onboarding-screen');
+const $aiIntroModal   = $('ai-intro-modal');
+const $sliderHandleWrap = $('slider-handle-wrap');
+const $sliderHandle   = $('slider-handle');
+const $sliderProgress = $('slider-progress');
+const $introStartBtn  = $('intro-start-btn');
+
+const $app            = $('app');
+const $msgList        = $('messages-list');
+const $msgContainer   = $('messages-container');
+const $welcome        = $('welcome-screen');
+let $typingInd        = null;  // created dynamically
+const $input          = $('message-input');
+const $sendBtn        = $('send-btn');
+const $fileBtn        = $('file-btn');
+const $fileInput      = $('file-input');
+const $voiceBtn       = $('voice-btn');
+const $previewStrip   = $('file-preview-strip');
+const $chatHistory    = $('chat-history');
+const $emptyMsg       = $('sb-empty-msg');
+const $voiceOverlay   = $('voice-overlay');
+const $voTimer        = $('vo-timer');
+const $voTranscript   = $('vo-transcript');
 
 /* ═══════════════════════════
    CANVAS BACKGROUND
@@ -1307,48 +1460,106 @@ function updateSendBtn() {
 }
 
 /* ═══════════════════════════
-   SETUP / AUTH
+   ONBOARDING / SLIDE TO UNLOCK
 ═══════════════════════════ */
-function initSetup() {
-  const saved = Storage.loadKey();
-  if (saved && validateApiKey(saved)) {
-    state.apiKey = saved;
+function initOnboarding() {
+  const hasSeenIntro = localStorage.getItem('badr_intro_seen') === 'true';
+  
+  if (hasSeenIntro) {
+    // User has seen intro before, launch app directly
+    $onboarding.classList.add('hidden');
     launchApp();
     return;
   }
-  $setup.classList.remove('hidden');
-  $app.classList.add('hidden');
+  
+  // First time user - show slide to unlock
+  $onboarding.classList.remove('hidden');
+  $aiIntroModal.classList.remove('visible');
+  
+  let isDragging = false;
+  let startX = 0;
+  const sliderTrack = document.getElementById("slider-track");
+  const maxSlide = sliderTrack ? sliderTrack.offsetWidth - 64 : 240;
+
+  function completeSlide() {
+    console.log("✅ Slide completed!");
+    isDragging = false;
+    $sliderHandleWrap.style.transition = "transform .4s cubic-bezier(.4,0,.2,1)";
+    $sliderHandleWrap.style.transform = `translateY(-50%) translateX(${maxSlide}px)`;
+    $sliderProgress.style.width = "100%";
+
+    setTimeout(() => {
+      $onboarding.classList.add("hidden");
+      setTimeout(() => {
+        $aiIntroModal.classList.add("visible");
+      }, 100);
+    }, 300);
+  }
+
+  function handleStart(e) {
+    isDragging = true;
+    startX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX;
+    $sliderHandle.style.transition = "none";
+    $sliderHandleWrap.style.transition = "none";
+    console.log("🖱️ Drag started at", startX);
+  }
+
+  function handleMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const currentX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX;
+    
+    // LTR Fix: Calculate distance drag left-to-right
+    let moveDistance = Math.min(Math.max(0, currentX - startX), maxSlide);
+    
+    $sliderHandleWrap.style.transform = `translateY(-50%) translateX(${moveDistance}px)`;
+    $sliderProgress.style.width = `${(moveDistance / maxSlide) * 100}%`;
+    
+    // Visual feedback: dim text as you slide
+    const sliderText = document.querySelector('.slider-text');
+    if (sliderText) {
+      sliderText.style.opacity = 1 - (moveDistance / maxSlide);
+    }
+
+    if (moveDistance >= maxSlide * 0.9) {
+      handleEnd();
+      completeSlide();
+    }
+  }
+
+  function handleEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    $sliderHandle.style.transition = "transform .15s ease";
+
+    const currentTransform = $sliderHandleWrap.style.transform;
+    const match = currentTransform.match(/translateX\(([\d.]+)px\)/);
+    const currentX = match ? parseFloat(match[1]) : 0;
+
+    if (currentX < maxSlide * 0.9) {
+      $sliderHandleWrap.style.transition = "transform .3s cubic-bezier(.4,0,.2,1)";
+      $sliderHandleWrap.style.transform = "translateY(-50%) translateX(0)";
+      $sliderProgress.style.transition = "width .3s ease";
+      $sliderProgress.style.width = "0%";
+    }
+  }
+
+  // Attach events to handle wrapper
+  $sliderHandleWrap.addEventListener("mousedown", handleStart);
+  $sliderHandleWrap.addEventListener("touchstart", handleStart, { passive: false });
+
+  // Attach move/end to window for smooth dragging
+  window.addEventListener("mousemove", handleMove);
+  window.addEventListener("touchmove", handleMove, { passive: false });
+  window.addEventListener("mouseup", handleEnd);
+  window.addEventListener("touchend", handleEnd);
+
+  console.log("🚀 Slider initialized. Max slide:", maxSlide);
 }
 
-$setupInput.addEventListener('input', () => {
-  const v = $setupInput.value.trim();
-  $setupBtn.disabled = !validateApiKey(v);
-  $setupError.classList.add('hidden');
-});
 
-$setupInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') $setupBtn.click();
-});
-
-$setupBtn.addEventListener('click', () => {
-  const key = $setupInput.value.trim();
-  if (!validateApiKey(key)) {
-    $setupError.textContent = 'المفتاح غير صالح، يجب أن يبدأ بـ sk-ant- ويكون بطول كافٍ';
-    $setupError.classList.remove('hidden');
-    return;
-  }
-  state.apiKey = key;
-  Storage.saveKey(key);
-  $setup.classList.add('hidden');
-  launchApp();
-});
-
-$('toggle-key-visibility').addEventListener('click', () => {
-  $setupInput.type = $setupInput.type === 'password' ? 'text' : 'password';
-});
 
 function launchApp() {
-  $app.classList.remove('hidden');
   state.chats = Storage.loadChats();
   renderSidebar();
   if (state.chats.length) {
@@ -1381,7 +1592,6 @@ function loadChat(id) {
   renderMessages();
   state.pendingImages = [];
   renderFilePreview();
-  scrollToBottom(false);
 }
 
 function deleteChat(id) {
@@ -1571,6 +1781,9 @@ async function sendMessage() {
       : m.content,
   }));
 
+  // Add system prompt
+  apiMessages.unshift({ role: 'system', content: SYSTEM_PROMPT });
+
   // add current user message
   apiMessages.push({
     role:    'user',
@@ -1592,7 +1805,7 @@ async function sendMessage() {
   try {
     state.abortController = new AbortController();
 
-    for await (const chunk of streamChat({ messages: apiMessages, apiKey: state.apiKey })) {
+    for await (const chunk of streamChat({ messages: apiMessages })) {
       fullText += chunk;
 
       if (!aiMsgEl) {
@@ -1830,7 +2043,10 @@ $('header-new-chat').addEventListener('click', newChat);
 
 $('clear-chat-btn').addEventListener('click', () => {
   const chat = activeChat();
-  if (!chat || !chat.messages.length) return;
+  if (!chat || !chat.messages.length) {
+    showToast('المحادثة فارغة بالفعل');
+    return;
+  }
   chat.messages = [];
   Storage.saveChats(state.chats);
   renderMessages();
@@ -1850,43 +2066,15 @@ function closeSidebar() {
 }
 
 $('toggle-sidebar').addEventListener('click', () => {
-  $sidebarEl.classList.contains('open') ? closeSidebar() : openSidebar();
+  if (window.innerWidth <= 768) {
+    $sidebarEl.classList.contains('open') ? closeSidebar() : openSidebar();
+  } else {
+    $sidebarEl.classList.toggle('desktop-closed');
+  }
 });
 $backdrop.addEventListener('click', closeSidebar);
 
-/* ═══════════════════════════
-   SETTINGS MODAL
-═══════════════════════════ */
-$('settings-btn').addEventListener('click', () => {
-  $settingsKey.value = state.apiKey;
-  $settingsModal.classList.remove('hidden');
-  closeSidebar();
-});
 
-$('close-settings').addEventListener('click', () => {
-  $settingsModal.classList.add('hidden');
-});
-
-$settingsModal.addEventListener('click', e => {
-  if (e.target === $settingsModal) $settingsModal.classList.add('hidden');
-});
-
-$('save-settings-btn').addEventListener('click', () => {
-  const key = $settingsKey.value.trim();
-  if (!validateApiKey(key)) {
-    showToast('⚠️ المفتاح غير صالح', true); return;
-  }
-  state.apiKey = key;
-  Storage.saveKey(key);
-  $settingsModal.classList.add('hidden');
-  showToast('✅ تم حفظ المفتاح بنجاح');
-});
-
-$('logout-btn').addEventListener('click', () => {
-  if (!confirm('هتحذف الـ API key وكل المحادثات، متأكد؟')) return;
-  Storage.clearAll();
-  location.reload();
-});
 
 /* ═══════════════════════════
    UTILITY
@@ -1902,7 +2090,43 @@ function escapeHtml(str) {
 /* ═══════════════════════════
    BOOT
 ═══════════════════════════ */
-initSetup();
+
+// Bulletproof event listener for the "Start Chat" button
+const startBtn = document.getElementById('intro-start-btn');
+
+if (startBtn) {
+  startBtn.addEventListener('click', () => {
+    console.log("✅ Start button clicked!"); 
+    
+    // 1. Mark as seen
+    localStorage.setItem('badr_intro_seen', 'true');
+    
+    // 2. Hide the Intro Modal
+    const modal = document.getElementById('ai-intro-modal');
+    if (modal) modal.classList.remove('visible');
+    
+    // 3. Hide the entire Onboarding screen
+    const onboarding = document.getElementById('onboarding-screen');
+    if (onboarding) {
+        onboarding.classList.add('hidden');
+        onboarding.style.display = 'none'; // Force hide just in case
+    }
+    
+    // 4. Show the main chat interface directly (skip API key setup since it's in env)
+    const app = document.getElementById('app');
+    const welcome = document.getElementById('welcome-screen');
+    if (app) {
+        app.classList.remove('hidden');
+        if (welcome) welcome.classList.remove('hidden');
+        
+        // Render sidebar and messages
+        if (typeof renderSidebar === 'function') renderSidebar();
+        if (typeof renderMessages === 'function') renderMessages();
+    }
+  });
+}
+
+initOnboarding();
 </script>
 
 </body>
