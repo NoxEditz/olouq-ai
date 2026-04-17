@@ -1126,7 +1126,7 @@ a { color: var(--ng); }
   </div>
 
   <div id="live-status" class="live-status">علوق لايف</div>
-  <div id="live-sub" class="live-sub">بيسمعك تلقائياً — بستكلم وهو يسمعك</div>
+  <div id="live-sub" class="live-sub">بيسمعك تلقائياً — بس اتكلم وهو يسمعك</div>
 
   <button id="live-mic-btn" style="margin-top: 40px; padding: 15px 40px; border-radius: 30px; background: var(--ng); color: #000; font-weight: 700; font-size: 1.1rem; box-shadow: var(--shadow-ng);">
     🎤 جاري التحضير...
@@ -1743,14 +1743,15 @@ function newChat() {
   Storage.saveChats(state.chats);
   renderSidebar();
   renderMessages();
+  if (window.innerWidth <= 768) closeSidebar();
 }
 
 function loadChat(id) {
   state.activeChatId = id;
-  renderSidebar();
   renderMessages();
   state.pendingImages = [];
   renderFilePreview();
+  if (window.innerWidth <= 768) closeSidebar();
 }
 
 function deleteChat(id) {
