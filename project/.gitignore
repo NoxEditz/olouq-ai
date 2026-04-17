@@ -1,0 +1,8 @@
+# Common ignore patterns
+.DS_Store
+node_modules/
+.env
+.vercel/
+.gemini/
+.DS_Store
+*.log
