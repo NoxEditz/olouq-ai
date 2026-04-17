@@ -141,8 +141,10 @@ let state = {
 const activeChat = () => state.chats.find(c => c.id === state.activeChatId);
 
 /* ═══════════════════════════
-   DOM REFS
+   DOM REFS + APP INIT (Wait for HTML to load)
 ═══════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+
 const $  = id => document.getElementById(id);
 const $onboarding     = $('onboarding-screen');
 const $aiIntroModal   = $('ai-intro-modal');
@@ -167,6 +169,9 @@ const $emptyMsg       = $('sb-empty-msg');
 const $voiceOverlay   = $('voice-overlay');
 const $voTimer        = $('vo-timer');
 const $voTranscript   = $('vo-transcript');
+
+const $sidebarEl      = $('sidebar');
+const $backdrop       = $('sidebar-backdrop');
 
 /* ═══════════════════════════
    CANVAS BACKGROUND
@@ -960,5 +965,10 @@ if (startBtn) {
   });
 }
 
+/* ═══════════════════════════
+   BOOT
+═══════════════════════════ */
 initOnboarding();
+
+});
 
