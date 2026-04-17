@@ -964,6 +964,43 @@ a { color: var(--ng); }
   .setup-card { padding: 28px 20px 24px; }
   .welcome-title { font-size: 20px; }
 }
+
+/* ─── MOBILE PERFORMANCE OPTIMIZATIONS ─── */
+@media (max-width: 768px) {
+  /* Reduce blur intensity instead of removing (looks great, much faster) */
+  #ai-intro-modal { backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important; }
+  #live-overlay   { backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; }
+  .sidebar        { backdrop-filter: blur(6px) !important; -webkit-backdrop-filter: blur(6px) !important; }
+
+  /* Remove blur only from elements user barely notices */
+  .voice-overlay,
+  .msg-input-wrap { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+  /* Reduce live ring count to just 2 (still looks premium) */
+  .live-rings:nth-child(3) { display: none; }
+
+  /* Keep orb glowing but lighter */
+  .live-orb {
+    box-shadow: 0 0 50px var(--glow-hi), 0 0 80px var(--glow) !important;
+  }
+
+  /* GPU-accelerated smooth scroll */
+  #msg-container {
+    -webkit-overflow-scrolling: touch;
+    will-change: scroll-position;
+  }
+
+  /* Offload transforms to GPU */
+  .live-orb, .live-rings, .slider-handle {
+    will-change: transform;
+    transform: translateZ(0);
+  }
+}
+
+/* Respect user's reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .live-rings, .live-orb, .slider-handle { animation: none !important; }
+}
 </style>
 </head>
 
@@ -1082,10 +1119,10 @@ a { color: var(--ng); }
   </div>
 
   <div id="live-status" class="live-status">علوق لايف</div>
-  <div id="live-sub" class="live-sub">اضغط على الدائرة للكلام</div>
+  <div id="live-sub" class="live-sub">بيسمعك تلقائياً — بستكلم وهو يسمعك</div>
 
   <button id="live-mic-btn" style="margin-top: 40px; padding: 15px 40px; border-radius: 30px; background: var(--ng); color: #000; font-weight: 700; font-size: 1.1rem; box-shadow: var(--shadow-ng);">
-    ابدأ الكلام 🎤
+    🎤 جاري التحضير...
   </button>
 </div>
 
@@ -1291,24 +1328,7 @@ a { color: var(--ng); }
 <!-- Toast -->
 <div id="toast" class="hidden"></div>
 
-<!-- Live Mode Overlay -->
-<div id="live-overlay">
-  <button class="live-close" id="live-exit-btn">✕</button>
-  
-  <div class="live-orb-container">
-    <div class="live-rings"></div>
-    <div class="live-rings"></div>
-    <div class="live-rings"></div>
-    <div id="live-orb" class="live-orb"></div>
-  </div>
 
-  <div id="live-status" class="live-status">علوق لايف</div>
-  <div id="live-sub" class="live-sub">اضغط على الدائرة للكلام</div>
-
-  <button id="live-mic-btn" style="margin-top: 40px; padding: 15px 40px; border-radius: 30px; background: var(--ng); color: #000; font-weight: 700; font-size: 1.1rem; box-shadow: var(--shadow-ng);">
-    ابدأ الكلام 🎤
-  </button>
-</div>
 
 <!-- ═════════════════════════════════════════════════
      APPLICATION SCRIPT
@@ -1441,8 +1461,19 @@ const $voTranscript   = $('vo-transcript');
 ═══════════════════════════ */
 (function initCanvas() {
   const canvas = $('bg-canvas');
-  const ctx    = canvas.getContext('2d');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
   let W, H, nodes = [];
+  let animId = null;
+  let lastFrame = 0;
+
+  // Detect low-end mobile (iPhone 8 and similar)
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const TARGET_FPS   = isMobile ? 24 : 60;
+  const FRAME_MS     = 1000 / TARGET_FPS;
+  const CONN_DIST    = isMobile ? 90 : 130;  // shorter connections on mobile
+  const CONN_DIST_SQ = CONN_DIST * CONN_DIST; // avoid sqrt
+  const MAX_NODES    = isMobile ? 25 : 90;    // far fewer nodes on mobile
 
   function resize() {
     W = canvas.width  = window.innerWidth;
@@ -1451,28 +1482,34 @@ const $voTranscript   = $('vo-transcript');
   }
 
   function initNodes() {
-    const count = Math.min(Math.floor((W * H) / 14000), 90);
+    const count = Math.min(Math.floor((W * H) / (isMobile ? 35000 : 14000)), MAX_NODES);
     nodes = Array.from({ length: count }, () => ({
       x:  Math.random() * W,
       y:  Math.random() * H,
-      vx: (Math.random() - .5) * .35,
-      vy: (Math.random() - .5) * .35,
+      vx: (Math.random() - .5) * (isMobile ? .2 : .35),
+      vy: (Math.random() - .5) * (isMobile ? .2 : .35),
       r:  Math.random() * 2.2 + .8,
       pulse: Math.random() * Math.PI * 2,
     }));
   }
 
   function draw(ts) {
+    animId = requestAnimationFrame(draw);
+
+    // Throttle to target FPS
+    if (ts - lastFrame < FRAME_MS) return;
+    lastFrame = ts;
+
     ctx.clearRect(0, 0, W, H);
 
-    // draw connections
+    // Draw connections using squared distance (no sqrt = faster)
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const dx = nodes[i].x - nodes[j].x;
         const dy = nodes[i].y - nodes[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 130) {
-          const alpha = (1 - dist / 130) * .18;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < CONN_DIST_SQ) {
+          const alpha = (1 - Math.sqrt(distSq) / CONN_DIST) * .18;
           ctx.beginPath();
           ctx.moveTo(nodes[i].x, nodes[i].y);
           ctx.lineTo(nodes[j].x, nodes[j].y);
@@ -1483,21 +1520,24 @@ const $voTranscript   = $('vo-transcript');
       }
     }
 
-    // draw nodes
+    // Draw nodes
     for (const n of nodes) {
       n.pulse += .025;
       const glow = (.5 + .5 * Math.sin(n.pulse)) * .6 + .2;
 
-      const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 4);
-      grad.addColorStop(0,   `rgba(0,255,65,${glow * .9})`);
-      grad.addColorStop(.4,  `rgba(0,255,65,${glow * .35})`);
-      grad.addColorStop(1,   'rgba(0,255,65,0)');
+      if (!isMobile) {
+        // Full glow gradient on desktop
+        const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 4);
+        grad.addColorStop(0,  `rgba(0,255,65,${glow * .9})`);
+        grad.addColorStop(.4, `rgba(0,255,65,${glow * .35})`);
+        grad.addColorStop(1,  'rgba(0,255,65,0)');
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r * 4, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
 
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, n.r * 4, 0, Math.PI * 2);
-      ctx.fillStyle = grad;
-      ctx.fill();
-
+      // Simple dot (works great on mobile)
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(0,255,65,${glow})`;
@@ -1509,14 +1549,24 @@ const $voTranscript   = $('vo-transcript');
       if (n.y < -10)  n.y = H + 10;
       if (n.y > H+10) n.y = -10;
     }
-
-    requestAnimationFrame(draw);
   }
+
+  // Pause animation when tab is hidden (saves battery)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      cancelAnimationFrame(animId);
+      animId = null;
+    } else if (!animId) {
+      lastFrame = 0;
+      animId = requestAnimationFrame(draw);
+    }
+  });
 
   window.addEventListener('resize', resize);
   resize();
-  requestAnimationFrame(draw);
+  animId = requestAnimationFrame(draw);
 })();
+
 
 /* ═══════════════════════════
    HELPERS
@@ -2032,6 +2082,13 @@ async function startVoiceRecording() {
     };
 
     mediaRecorder.onstop = async () => {
+      // Minimum 1 second recording - prevents accidental/empty sends
+      if (recordingSeconds < 1) {
+        stream.getTracks().forEach(track => track.stop());
+        showToast('⚠️ سجّل لمدة ثانية على الأقل', true);
+        return;
+      }
+      
       const audioBlob = new Blob(audioChunks, { type: mimeType });
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -2047,12 +2104,14 @@ async function startVoiceRecording() {
 
     mediaRecorder.start();
     
-    // UI Updates
+    // UI Updates - only show overlay if NOT in live mode
     recordingSeconds = 0;
-    $voTimer.textContent = '0:00';
-    $voTranscript.textContent = 'أنا بسمعك دلوقتي... تكلم بوضوح 🎙️';
-    $voiceOverlay.classList.remove('hidden');
-    $voiceBtn.classList.add('recording');
+    if (!liveActive) {
+      $voTimer.textContent = '0:00';
+      $voTranscript.textContent = 'أنا بسمعك دلوقتي... تكلم بوضوح 🎙️';
+      $voiceOverlay.classList.remove('hidden');
+      $voiceBtn.classList.add('recording');
+    }
 
     recordingInterval = setInterval(() => {
       recordingSeconds++;
@@ -2306,22 +2365,24 @@ const $liveExit    = $('live-exit-btn');
 const $headerLive  = $('header-live-btn');
 
 let liveActive = false;
+let liveSessionId = 0; // Increment on each new session to cancel stale async operations
 
-function speak(text) {
+function speak(text, sessionId) {
   return new Promise((resolve) => {
     if (!window.speechSynthesis) return resolve();
+    // If session has ended, don't speak
+    if (sessionId !== undefined && sessionId !== liveSessionId) return resolve();
+    
     window.speechSynthesis.cancel();
 
     const ut = new SpeechSynthesisUtterance(text);
     ut.lang = 'ar-EG';
-    ut.rate = 0.92;      // Slightly slower = clearer
-    ut.pitch = 1.1;      // Slightly higher = more natural
+    ut.rate = 0.92;
+    ut.pitch = 1.1;
     ut.volume = 1.0;
 
-    // Wait for voices to load (needed on some browsers)
     const setVoice = () => {
       const voices = window.speechSynthesis.getVoices();
-      // Priority: 1) Arabic Egypt, 2) Any Arabic, 3) First available
       const arEg  = voices.find(v => v.lang === 'ar-EG');
       const arAny = voices.find(v => v.lang.startsWith('ar'));
       const best  = arEg || arAny || voices[0];
@@ -2335,12 +2396,17 @@ function speak(text) {
     }
 
     ut.onstart = () => {
+      // Only update UI if still in the same session
+      if (sessionId !== undefined && sessionId !== liveSessionId) {
+        window.speechSynthesis.cancel();
+        return resolve();
+      }
       if ($liveOrb) $liveOrb.className = 'live-orb speaking';
       if ($liveStatus) $liveStatus.textContent = 'علوق بيتكلم...';
     };
     ut.onend = () => {
-      if ($liveOrb) $liveOrb.className = 'live-orb listening';
-      if ($liveStatus) $liveStatus.textContent = 'أنا سامعك...';
+      if ($liveOrb && liveActive) $liveOrb.className = 'live-orb listening';
+      if ($liveStatus && liveActive) $liveStatus.textContent = 'أنا سامعك...';
       resolve();
     };
     ut.onerror = () => resolve();
@@ -2348,44 +2414,170 @@ function speak(text) {
   });
 }
 
+/* VAD state */
+let liveVADStream = null;
+let liveAudioCtx = null;
+let liveAnalyser = null;
+let liveVADTimer = null;
+let liveVADRecording = false;
+let liveVADSilenceTimer = null;
+let liveVADChunks = [];
+let liveVADRecorder = null;
+let liveMuted = false;
+let liveVADSpeakStart = 0;
+
+const VAD_THRESHOLD   = 18;   // Volume level 0-255
+const VAD_SILENCE_MS  = 1500; // Silence duration before sending
+const VAD_MIN_SPEAK_MS = 700; // Min speech duration to prevent noise sends
+
+async function startLiveVAD(mySession) {
+  try {
+    liveVADStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    liveAudioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+    liveAnalyser  = liveAudioCtx.createAnalyser();
+    liveAnalyser.fftSize = 512;
+    const source = liveAudioCtx.createMediaStreamSource(liveVADStream);
+    source.connect(liveAnalyser);
+
+    const dataArray = new Uint8Array(liveAnalyser.frequencyBinCount);
+    const mimeType  = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+
+    liveVADTimer = setInterval(() => {
+      if (!liveActive || liveMuted || mySession !== liveSessionId) return;
+
+      liveAnalyser.getByteFrequencyData(dataArray);
+      const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+
+      if (avg > VAD_THRESHOLD) {
+        // User is speaking!
+        if (!liveVADRecording) {
+          // Interrupt AI if it's talking
+          if (window.speechSynthesis.speaking) {
+            liveSessionId++;
+            mySession = liveSessionId;
+            window.speechSynthesis.cancel();
+          }
+          // Start fresh recording
+          liveVADRecording = true;
+          liveVADSpeakStart = Date.now();
+          liveVADChunks = [];
+          liveVADRecorder = new MediaRecorder(liveVADStream, { mimeType });
+          liveVADRecorder.ondataavailable = e => { if (e.data.size > 0) liveVADChunks.push(e.data); };
+          liveVADRecorder.start();
+          $liveOrb.className = 'live-orb listening';
+          $liveStatus.textContent = 'بسمعك...';
+        }
+        // Reset silence countdown
+        clearTimeout(liveVADSilenceTimer);
+        liveVADSilenceTimer = setTimeout(() => {
+          if (!liveVADRecording || !liveActive) return;
+          liveVADRecording = false;
+          const duration = Date.now() - liveVADSpeakStart;
+          const capturedSession = liveSessionId;
+
+          liveVADRecorder.onstop = () => {
+            if (capturedSession !== liveSessionId) return; // Exited during wait
+            if (duration < VAD_MIN_SPEAK_MS) return; // Too short = noise
+            const blob = new Blob(liveVADChunks, { type: mimeType });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64 = reader.result.split(',')[1];
+              sendVoiceMessage(base64, mimeType);
+            };
+            reader.readAsDataURL(blob);
+          };
+          liveVADRecorder.stop();
+          $liveOrb.className = 'live-orb thinking';
+          $liveStatus.textContent = 'بفكر في الرد...';
+        }, VAD_SILENCE_MS);
+      }
+    }, 80);
+
+    $liveOrb.className = 'live-orb listening';
+    $liveStatus.textContent = 'أنا سامعك...';
+    $liveMicBtn.textContent = '🔇 كتم الصوت';
+
+  } catch (err) {
+    showToast('⚠️ لا يمكن الوصول للميكروفون، تأكد من الأذونات', true);
+    exitLiveMode();
+  }
+}
+
+function stopLiveVAD() {
+  clearInterval(liveVADTimer);
+  clearTimeout(liveVADSilenceTimer);
+  if (liveVADRecorder && liveVADRecorder.state !== 'inactive') {
+    liveVADRecorder.ondataavailable = null;
+    liveVADRecorder.onstop = () => {};
+    liveVADRecorder.stop();
+  }
+  if (liveAudioCtx) liveAudioCtx.close().catch(() => {});
+  if (liveVADStream) liveVADStream.getTracks().forEach(t => t.stop());
+  liveVADStream    = null;
+  liveVADRecording = false;
+  liveMuted        = false;
+  liveVADTimer     = null;
+}
+
 async function startLiveMode() {
+  liveSessionId++;
+  const mySession = liveSessionId;
   liveActive = true;
+  liveMuted  = false;
   $liveOverlay.classList.add('visible');
-  $liveOrb.className = 'live-orb listening';
+  $liveOrb.className = 'live-orb thinking';
   $liveStatus.textContent = 'جاهز للأوامر';
-  await speak("أهلاً بك يا مستر بدر في علوق لايف. أنا سامعك، اتفضل قول اللي عاوزه.");
+  $liveMicBtn.textContent = '🎤 جاري التحضير...';
+  await speak("أهلاً بك يا مستر بدر في علوق لايف. أنا سامعك، اتفضل قول اللي عاوزه.", mySession);
+  if (liveSessionId === mySession) startLiveVAD(mySession);
 }
 
 function exitLiveMode() {
+  liveSessionId++; // Invalidate all async operations
   liveActive = false;
   window.speechSynthesis.cancel();
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  stopLiveVAD();
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.ondataavailable = null;
+    mediaRecorder.onstop = () => {};
+    mediaRecorder.stop();
+  }
   $liveOverlay.classList.remove('visible');
 }
 
 if ($headerLive) $headerLive.addEventListener('click', startLiveMode);
 if ($liveExit) $liveExit.addEventListener('click', exitLiveMode);
 
-$liveMicBtn.addEventListener('mousedown', () => {
+// Button is now a MUTE TOGGLE (not hold-to-speak)
+$liveMicBtn.addEventListener('click', () => {
   if (!liveActive) return;
-  startVoiceRecording();
-  $liveOrb.className = 'live-orb speaking';
-  $liveStatus.textContent = 'بسجل صوتك...';
+  liveMuted = !liveMuted;
+  if (liveMuted) {
+    // Muting
+    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+    clearTimeout(liveVADSilenceTimer);
+    if (liveVADRecording && liveVADRecorder && liveVADRecorder.state !== 'inactive') {
+      liveVADRecorder.onstop = () => {}; // discard
+      liveVADRecorder.stop();
+      liveVADRecording = false;
+    }
+    $liveOrb.className = 'live-orb thinking';
+    $liveStatus.textContent = 'الميكروفون مكتوم';
+    $liveMicBtn.textContent = '🎤 تشغيل';
+  } else {
+    // Unmuting
+    $liveOrb.className = 'live-orb listening';
+    $liveStatus.textContent = 'أنا سامعك...';
+    $liveMicBtn.textContent = '🔇 كتم الصوت';
+  }
 });
-
-$liveMicBtn.addEventListener('mouseup', () => {
-  if (!liveActive) return;
-  stopVoiceRecording();
-  $liveOrb.className = 'live-orb thinking';
-  $liveStatus.textContent = 'بفكر في الرد...';
-});
-
-$liveMicBtn.addEventListener('touchstart', (e) => { e.preventDefault(); $liveMicBtn.dispatchEvent(new Event('mousedown')); });
-$liveMicBtn.addEventListener('touchend', (e) => { e.preventDefault(); $liveMicBtn.dispatchEvent(new Event('mouseup')); });
 
 const originalSendVoiceMessage = sendVoiceMessage;
 sendVoiceMessage = async function(base64, mimeType) {
   if (!liveActive) return originalSendVoiceMessage(base64, mimeType);
+
+  // Capture session at start to detect if user exits mid-request
+  const mySession = liveSessionId;
 
   // Live mode: transcribe + reply via AI
   const chat = activeChat();
@@ -2409,6 +2601,9 @@ RESPOND ONLY WITH THIS JSON (no markdown, no extra text):
 
     const raw = await fetchChat({ messages: liveMessages });
 
+    // If user exited while waiting, do nothing
+    if (mySession !== liveSessionId) return;
+
     let transcript = '🎤 رسالة صوتية';
     let reply = raw;
     try {
@@ -2424,10 +2619,11 @@ RESPOND ONLY WITH THIS JSON (no markdown, no extra text):
     Storage.saveChats(state.chats);
     renderMessages();
 
-    // Speak the reply
-    await speak(reply);
+    // Speak the reply (with session check)
+    await speak(reply, mySession);
 
   } catch (err) {
+    if (mySession !== liveSessionId) return; // Already exited
     $liveStatus.textContent = 'حصلت مشكلة، حاول تاني';
     $liveOrb.className = 'live-orb listening';
   }
