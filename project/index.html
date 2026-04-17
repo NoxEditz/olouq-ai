@@ -1618,7 +1618,8 @@ function initOnboarding() {
     if (!isDragging) return;
     e.preventDefault();
     const x = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX;
-    const deltaX = x - startX;
+    // RTL FIX: In Arabic mode, we drag left, so subtract current from start
+    const deltaX = startX - x;
     let newX = Math.max(0, Math.min(deltaX, maxSlide));
 
     $sliderHandleWrap.style.transform = `translateY(-50%) translateX(${newX}px)`;
@@ -2244,21 +2245,40 @@ function escapeHtml(str) {
    BOOT
 ═══════════════════════════ */
 
-// Add event listener for the "Start Chat" button in the intro modal
-$introStartBtn.addEventListener('click', () => {
-  // 1. Mark intro as seen so they don't have to slide again on reload
-  localStorage.setItem('badr_intro_seen', 'true');
-  
-  // 2. Hide the intro modal and the onboarding background
-  $aiIntroModal.classList.remove('visible');
-  $onboarding.classList.add('hidden');
-  
-  // 3. Show the main chat interface directly (skip API key setup since it's in env)
-  $app.classList.remove('hidden');
-  $welcome.classList.remove('hidden');
-  renderSidebar();
-  renderMessages();
-});
+// Bulletproof event listener for the "Start Chat" button
+const startBtn = document.getElementById('intro-start-btn');
+
+if (startBtn) {
+  startBtn.addEventListener('click', () => {
+    console.log("✅ Start button clicked!"); 
+    
+    // 1. Mark as seen
+    localStorage.setItem('badr_intro_seen', 'true');
+    
+    // 2. Hide the Intro Modal
+    const modal = document.getElementById('ai-intro-modal');
+    if (modal) modal.classList.remove('visible');
+    
+    // 3. Hide the entire Onboarding screen
+    const onboarding = document.getElementById('onboarding-screen');
+    if (onboarding) {
+        onboarding.classList.add('hidden');
+        onboarding.style.display = 'none'; // Force hide just in case
+    }
+    
+    // 4. Show the main chat interface directly (skip API key setup since it's in env)
+    const app = document.getElementById('app');
+    const welcome = document.getElementById('welcome-screen');
+    if (app) {
+        app.classList.remove('hidden');
+        if (welcome) welcome.classList.remove('hidden');
+        
+        // Render sidebar and messages
+        if (typeof renderSidebar === 'function') renderSidebar();
+        if (typeof renderMessages === 'function') renderMessages();
+    }
+  });
+}
 
 initOnboarding();
 </script>
