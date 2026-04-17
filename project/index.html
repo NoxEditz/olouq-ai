@@ -1190,41 +1190,16 @@ a { color: var(--ng); }
 // --- CHAT API LOGIC INLINED TO AVOID LOCAL CORS ERRORS ---
 const SYSTEM_PROMPT = `أنت "علوق النخل" - مساعد ذكاء اصطناعي متطور، متصمم بواسطة علوق النخل عشان يشرح الأكواد البرمجية ويساعد في حل المشاكل التقنية بأسلوب مبسط وواضح جداً. بترد بالعامية المصرية وبطريقة ودودة جداً.`;
 
-async function* streamChat({ messages }) {
+async function fetchChat({ messages }) {
   const response = await fetch('/api/server', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messages })
   });
   
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    const lines = buffer.split('\n');
-    buffer = lines.pop(); // Keep incomplete line in buffer for next iteration
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith('data:')) continue;
-      if (trimmed === 'data: [DONE]') continue;
-
-      try {
-        const data = JSON.parse(trimmed.substring(5));
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) yield text;
-      } catch (e) {
-        // Ignore malformed or empty chunks
-      }
-    }
-  }
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+  return data.reply;
 }
 
 const Storage = {
@@ -1803,46 +1778,25 @@ async function sendMessage() {
   let aiBubble = null;
 
   try {
-    state.abortController = new AbortController();
+    const reply = await fetchChat({ messages: apiMessages });
+    fullText = reply;
+    typingEl.remove();
 
-    for await (const chunk of streamChat({ messages: apiMessages })) {
-      fullText += chunk;
-
-      if (!aiMsgEl) {
-        // First chunk — remove typing, add bubble
-        typingEl.remove();
-        const aiMsg = {
-          id:      genId(),
-          role:    'assistant',
-          content: '',
-          time:    now(),
-        };
-        chat.messages.push(aiMsg);
-        aiMsgEl  = buildMessageEl(aiMsg);
-        aiMsgEl.dataset.live = '1';
-        $msgList.appendChild(aiMsgEl);
-        aiBubble = aiMsgEl.querySelector('.msg-bubble');
-        aiBubble.classList.add('streaming', 'cursor');
-      }
-
-      // Update bubble content live
-      aiBubble.innerHTML = renderMarkdown(fullText);
-      aiBubble.classList.add('cursor');
-      scrollToBottom(false);
-    }
+    const aiMsg = {
+      id:      genId(),
+      role:    'assistant',
+      content: fullText,
+      time:    now(),
+    };
+    chat.messages.push(aiMsg);
+    aiMsgEl = buildMessageEl(aiMsg);
+    $msgList.appendChild(aiMsgEl);
+    aiBubble = aiMsgEl.querySelector('.msg-bubble');
+    Storage.saveChats(state.chats);
+    scrollToBottom(true);
 
     // Finalise
-    if (aiMsgEl) {
-      const aiMsg = chat.messages[chat.messages.length - 1];
-      aiMsg.content = fullText;
-      aiMsg.time    = now();
-      aiBubble.classList.remove('streaming', 'cursor');
-      aiBubble.innerHTML = renderMarkdown(fullText);
-      Storage.saveChats(state.chats);
-    } else if (typingEl.parentNode) {
-      // empty response
-      typingEl.remove();
-    }
+    // (Handled above in non-streaming mode)
 
   } catch (err) {
     typingEl?.remove();
