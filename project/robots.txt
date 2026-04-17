@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ai-badr.vercel.app/sitemap.xml
