@@ -33,8 +33,8 @@ export default async function handler(req, res) {
   // --- ATTEMPT 1: GEMINI ---
   if (GEMINI_KEY) {
     try {
-      // Primary model string - common in 2026
-      const modelName = "gemini-1.5-flash"; 
+      // Optimized for 2026 stable high-speed performance
+      const modelName = "gemini-2.5-flash-lite"; 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_KEY}`;
       
       const contents = formatGeminiMessages(messages);
