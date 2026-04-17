@@ -39,10 +39,14 @@ export default async function handler(req, res) {
         const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (reply) return res.status(200).json({ reply });
       }
-      // If Gemini failed for ANY reason (404, 429, 500, etc), log and try Groq
+      
+      // Detailed logging for debugging
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`Gemini Failed | Status: ${response.status} | Error:`, JSON.stringify(errorData));
+      
       console.log(`Gemini Status ${response.status} - Falling back to Groq.`);
     } catch (err) {
-      console.error("Gemini Critical Failure:", err);
+      console.error("Gemini Critical Failure (Network/Fetch):", err);
     }
   }
 
