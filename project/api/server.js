@@ -40,15 +40,19 @@ export default async function handler(req, res) {
       };
     });
 
-  // Inject instructions into history to bypass 'system_instruction' field issues
+  // Inject instructions into history for maximum compatibility
   const contents = [
     { role: 'user', parts: [{ text: `Instruction: ${SYS_TEXT}` }] },
     { role: 'model', parts: [{ text: "فهمتك تماماً يا مستر بدر. أنا علوق النخل وجاهز لمساعدتك بالعامية المصرية وبكل احترافية! اتفضل اسألني في أي حاجة." }] },
     ...userMessages
   ];
 
-  // Return to v1beta for better model compatibility with 'gemini-1.5-flash'
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+  /**
+   * FALLBACK MODEL: 'gemini-pro'
+   * If gemini-1.5-flash is not found, it usually means the API key is older 
+   * or restricted. 'gemini-pro' is the most universally supported model name.
+   */
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
   try {
     const response = await fetch(url, {
