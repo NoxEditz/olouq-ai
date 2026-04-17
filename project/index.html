@@ -131,6 +131,7 @@ a { color: var(--ng); }
   height: 56px; background: var(--bg2); border-radius: var(--radius-lg);
   position: relative; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
+  user-select: none; -webkit-user-select: none;
 }
 .slider-label {
   font-size: 15px; color: var(--txt2); font-weight: 600;
@@ -140,7 +141,7 @@ a { color: var(--ng); }
 .slider-handle-wrap {
   position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
   width: 48px; height: 48px; cursor: grab; touch-action: none;
-  z-index: 5;
+  z-index: 5; user-select: none; -webkit-user-select: none;
 }
 .slider-handle {
   width: 100%; height: 100%; border-radius: var(--radius);
@@ -148,7 +149,8 @@ a { color: var(--ng); }
   display: flex; align-items: center; justify-content: center;
   font-size: 22px; color: #001a00; font-weight: 700;
   box-shadow: 0 4px 20px rgba(0,255,65,.4), inset 0 0 15px rgba(255,255,255,.2);
-  transition: transform .15s ease; user-select: none;
+  transition: transform .15s ease; user-select: none; -webkit-user-select: none;
+  pointer-events: auto;
 }
 .slider-handle:active { cursor: grabbing; transform: scale(.95); }
 .slider-progress {
@@ -990,7 +992,7 @@ a { color: var(--ng); }
 ══════════════════════════════════ -->
 <div id="onboarding-screen">
   <h1 class="onboarding-title">BADR AI</h1>
-  <p class="onboarding-subtitle">مساعدك الذكي للثانوية العامة والإنتاج الموسيقي 🎓🎵</p>
+  <p class="onboarding-subtitle">مساعدك الذكي للثانوية العامة 🎓</p>
   
   <div class="slider-container">
     <div class="slider-track">
@@ -1584,44 +1586,7 @@ function initOnboarding() {
   $aiIntroModal.classList.remove('visible');
   
   let isDragging = false;
-  let startX = 0;
-  let currentX = 0;
   const maxSlide = 240; // Max distance slider can move
-  
-  function handleStart(clientX) {
-    isDragging = true;
-    startX = clientX;
-    $sliderHandle.style.transition = 'none';
-  }
-  
-  function handleMove(clientX) {
-    if (!isDragging) return;
-    currentX = clientX - startX;
-    if (currentX < 0) currentX = 0;
-    if (currentX > maxSlide) currentX = maxSlide;
-    
-    $sliderHandleWrap.style.transform = `translateY(-50%) translateX(${currentX}px)`;
-    $sliderProgress.style.width = `${(currentX / maxSlide) * 100}%`;
-  }
-  
-  function handleEnd() {
-    if (!isDragging) return;
-    isDragging = false;
-    $sliderHandle.style.transition = 'transform .15s ease';
-    
-    if (currentX >= maxSlide - 20) {
-      // Success - complete the slide
-      completeSlide();
-    } else {
-      // Reset - not far enough
-      $sliderHandleWrap.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
-      $sliderHandleWrap.style.transform = 'translateY(-50%) translateX(0)';
-      $sliderProgress.style.transition = 'width .3s ease';
-      $sliderProgress.style.width = '0%';
-    }
-    currentX = 0;
-    startX = 0;
-  }
   
   function completeSlide() {
     $sliderHandleWrap.style.transition = 'transform .4s cubic-bezier(.4,0,.2,1)';
@@ -1642,19 +1607,86 @@ function initOnboarding() {
   // Mouse events
   $sliderHandleWrap.addEventListener('mousedown', e => {
     e.preventDefault();
-    handleStart(e.clientX);
+    e.stopPropagation();
+    isDragging = true;
+    startX = e.clientX - $sliderHandleWrap.getBoundingClientRect().left;
+    $sliderHandle.style.transition = 'none';
+    $sliderHandleWrap.style.transition = 'none';
   });
-  document.addEventListener('mousemove', e => handleMove(e.clientX));
-  document.addEventListener('mouseup', () => handleEnd());
+  
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const rect = $sliderHandleWrap.parentElement.getBoundingClientRect();
+    let newX = e.clientX - rect.left - 24; // 24 is half of handle width
+    if (newX < 0) newX = 0;
+    if (newX > maxSlide) newX = maxSlide;
+    
+    $sliderHandleWrap.style.transform = `translateY(-50%) translateX(${newX}px)`;
+    $sliderProgress.style.width = `${(newX / maxSlide) * 100}%`;
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    $sliderHandle.style.transition = 'transform .15s ease';
+    
+    const currentTransform = $sliderHandleWrap.style.transform;
+    const match = currentTransform.match(/translateX\((\d+)px\)/);
+    const currentX = match ? parseFloat(match[1]) : 0;
+    
+    if (currentX >= maxSlide - 20) {
+      completeSlide();
+    } else {
+      $sliderHandleWrap.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
+      $sliderHandleWrap.style.transform = 'translateY(-50%) translateX(0)';
+      $sliderProgress.style.transition = 'width .3s ease';
+      $sliderProgress.style.width = '0%';
+    }
+  });
   
   // Touch events
   $sliderHandleWrap.addEventListener('touchstart', e => {
-    handleStart(e.touches[0].clientX);
-  }, { passive: true });
+    e.preventDefault();
+    isDragging = true;
+    const touch = e.touches[0];
+    const rect = $sliderHandleWrap.parentElement.getBoundingClientRect();
+    startX = touch.clientX - rect.left - 24;
+    $sliderHandle.style.transition = 'none';
+    $sliderHandleWrap.style.transition = 'none';
+  }, { passive: false });
+  
   document.addEventListener('touchmove', e => {
-    handleMove(e.touches[0].clientX);
-  }, { passive: true });
-  document.addEventListener('touchend', () => handleEnd());
+    if (!isDragging) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = $sliderHandleWrap.parentElement.getBoundingClientRect();
+    let newX = touch.clientX - rect.left - 24;
+    if (newX < 0) newX = 0;
+    if (newX > maxSlide) newX = maxSlide;
+    
+    $sliderHandleWrap.style.transform = `translateY(-50%) translateX(${newX}px)`;
+    $sliderProgress.style.width = `${(newX / maxSlide) * 100}%`;
+  }, { passive: false });
+  
+  document.addEventListener('touchend', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    $sliderHandle.style.transition = 'transform .15s ease';
+    
+    const currentTransform = $sliderHandleWrap.style.transform;
+    const match = currentTransform.match(/translateX\((\d+)px\)/);
+    const currentX = match ? parseFloat(match[1]) : 0;
+    
+    if (currentX >= maxSlide - 20) {
+      completeSlide();
+    } else {
+      $sliderHandleWrap.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
+      $sliderHandleWrap.style.transform = 'translateY(-50%) translateX(0)';
+      $sliderProgress.style.transition = 'width .3s ease';
+      $sliderProgress.style.width = '0%';
+    }
+  });
   
   // Intro start button
   $introStartBtn.addEventListener('click', () => {
