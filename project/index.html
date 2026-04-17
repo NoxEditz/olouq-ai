@@ -1846,25 +1846,30 @@ async function sendMessage() {
 
   } catch (err) {
     typingEl?.remove();
-    if (aiMsgEl) aiMsgEl.remove();
-
-    // Pop last AI if partially added
-    if (chat.messages[chat.messages.length - 1]?.role === 'assistant') {
-      chat.messages.pop();
+    // Only remove bubble if it was empty
+    if (aiMsgEl && !fullText) {
+      aiMsgEl.remove();
+      if (chat.messages[chat.messages.length - 1]?.role === 'assistant') {
+        chat.messages.pop();
+      }
+    } else if (aiBubble) {
+      aiBubble.classList.remove('streaming', 'cursor');
     }
 
     const isNetwork = err instanceof NetworkError;
     const errMsg    = err.message || 'حصل خطأ غير متوقع، حاول تاني';
     showToast(`❌ ${errMsg}`, true);
 
-    // Show error bubble
-    const errMsgObj = {
-      id:      genId(),
-      role:    'assistant',
-      content: `⚠️ **عذراً، حصلت مشكلة:**\n\n${errMsg}\n\n${isNetwork ? 'تأكد من اتصالك بالإنترنت وحاول تاني.' : ''}`,
-      time:    now(),
-    };
-    appendMessage(errMsgObj);
+    // Show error bubble if we didn't get any AI response at all
+    if (!fullText) {
+      const errMsgObj = {
+        id:      genId(),
+        role:    'assistant',
+        content: `⚠️ **عذراً، حصلت مشكلة:**\n\n${errMsg}\n\nتأكد من إدخال الـ API Key في Vercel وحاول تاني.`,
+        time:    now(),
+      };
+      appendMessage(errMsgObj);
+    }
   } finally {
     state.streaming      = false;
     state.abortController = null;
