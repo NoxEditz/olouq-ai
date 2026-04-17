@@ -2078,47 +2078,72 @@ function stopVoiceRecording() {
 }
 
 async function sendVoiceMessage(base64, mimeType) {
-  // Add a special "Voice Message" to UI
-  const voiceMsg = {
-    id:      genId(),
-    role:    'user',
-    content: '🎤 رسالة صوتية (جاري المعالجة...)',
-    audio:   { data: base64, mimeType },
-    time:    now(),
-  };
-  
-  // We'll hijack the sendMessage flow slightly
   const chat = activeChat();
   if (!chat) return;
 
-  // Clear input just in case
   $input.value = '';
   autoResize();
 
-  appendMessage(voiceMsg);
-  
-  // Prepare messages for API
-  const apiMessages = chat.messages.slice(0, -1).map(m => ({
-    role:    m.role,
-    content: m.audio ? buildVoiceContent(m.content, m.audio) : (m.images?.length ? buildMessageContent(m.content, m.images) : m.content),
-  }));
-
-  apiMessages.push({
+  // Show a temporary placeholder while we process
+  const placeholder = {
+    id:      genId(),
     role:    'user',
-    content: buildVoiceContent('الرجاء الاستماع لهذه الرسالة الصوتية والرد عليها بالعامية المصرية.', voiceMsg.audio)
-  });
+    content: '🎤 جاري تحويل الصوت ...',
+    audio:   { data: base64, mimeType },
+    time:    now(),
+  };
+  chat.messages.push(placeholder);
+  appendMessage(placeholder);
+  scrollToBottom(true);
 
-  // Start AI streaming
   state.streaming = true;
   $sendBtn.disabled = true;
   const typingEl = appendTypingIndicator();
 
   try {
-    let fullText = '';
-    let aiMsgEl  = null;
-    const reply = await fetchChat({ messages: apiMessages });
+    // Ask AI to BOTH transcribe AND reply in JSON format
+    const transcribeMessages = [
+      {
+        role: 'user',
+        content: [
+          { text: `استمع للرسالة الصوتية وافعل الآتي:
+1. حوّل كل اللي اتكلمته لنص مكتوب.
+2. ارد عليه بالعامية المصرية وكأنك علوق النخل.
+RESPOND ONLY WITH THIS JSON (no markdown, no extra text):
+{ "transcript": "النص المحوّل", "reply": "ردك" }` },
+          { inline_data: { mime_type: mimeType, data: base64 } }
+        ]
+      }
+    ];
+
+    const raw = await fetchChat({ messages: transcribeMessages });
     typingEl.remove();
 
+    // Parse JSON response
+    let transcript = '';
+    let reply = '';
+    try {
+      const cleaned = raw.replace(/^```json\n?/, '').replace(/```$/, '').trim();
+      const parsed = JSON.parse(cleaned);
+      transcript = parsed.transcript || '';
+      reply = parsed.reply || raw;
+    } catch {
+      transcript = '🎤 رسالة صوتية';
+      reply = raw;
+    }
+
+    // Update the user bubble with real transcribed text
+    const placeholderIndex = chat.messages.findIndex(m => m.id === placeholder.id);
+    if (placeholderIndex !== -1) {
+      chat.messages[placeholderIndex].content = `🎤 ${transcript}`;
+      // Update DOM bubble
+      const bubbles = $msgList.querySelectorAll('.msg-bubble');
+      const userBubbles = Array.from(bubbles).filter(b => b.closest('.msg.user'));
+      const lastUserBubble = userBubbles[userBubbles.length - 1];
+      if (lastUserBubble) lastUserBubble.innerHTML = renderMarkdown(`🎤 ${transcript}`);
+    }
+
+    // Add AI reply
     const aiMsg = {
       id:      genId(),
       role:    'assistant',
@@ -2129,6 +2154,9 @@ async function sendVoiceMessage(base64, mimeType) {
     appendMessage(aiMsg);
     Storage.saveChats(state.chats);
     scrollToBottom(true);
+
+    return { transcript, reply };
+
   } catch (err) {
     if (typingEl && typingEl.parentNode) typingEl.remove();
     showToast('❌ حصلت مشكلة أثناء معالجة الصوت', true);
@@ -2283,22 +2311,36 @@ function speak(text) {
   return new Promise((resolve) => {
     if (!window.speechSynthesis) return resolve();
     window.speechSynthesis.cancel();
-    
+
     const ut = new SpeechSynthesisUtterance(text);
     ut.lang = 'ar-EG';
-    ut.rate = 1.0;
-    
-    const voices = window.speechSynthesis.getVoices();
-    const arVoice = voices.find(v => v.lang.startsWith('ar')) || voices[0];
-    if (arVoice) ut.voice = arVoice;
+    ut.rate = 0.92;      // Slightly slower = clearer
+    ut.pitch = 1.1;      // Slightly higher = more natural
+    ut.volume = 1.0;
+
+    // Wait for voices to load (needed on some browsers)
+    const setVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      // Priority: 1) Arabic Egypt, 2) Any Arabic, 3) First available
+      const arEg  = voices.find(v => v.lang === 'ar-EG');
+      const arAny = voices.find(v => v.lang.startsWith('ar'));
+      const best  = arEg || arAny || voices[0];
+      if (best) ut.voice = best;
+    };
+
+    if (window.speechSynthesis.getVoices().length > 0) {
+      setVoice();
+    } else {
+      window.speechSynthesis.onvoiceschanged = setVoice;
+    }
 
     ut.onstart = () => {
-      $liveOrb.className = 'live-orb speaking';
-      $liveStatus.textContent = 'علوق بيتكلم...';
+      if ($liveOrb) $liveOrb.className = 'live-orb speaking';
+      if ($liveStatus) $liveStatus.textContent = 'علوق بيتكلم...';
     };
     ut.onend = () => {
-      $liveOrb.className = 'live-orb listening';
-      $liveStatus.textContent = 'أنا سامعك...';
+      if ($liveOrb) $liveOrb.className = 'live-orb listening';
+      if ($liveStatus) $liveStatus.textContent = 'أنا سامعك...';
       resolve();
     };
     ut.onerror = () => resolve();
@@ -2345,24 +2387,46 @@ const originalSendVoiceMessage = sendVoiceMessage;
 sendVoiceMessage = async function(base64, mimeType) {
   if (!liveActive) return originalSendVoiceMessage(base64, mimeType);
 
+  // Live mode: transcribe + reply via AI
   const chat = activeChat();
-  const apiMessages = chat.messages.map(m => ({
-    role: m.role,
-    content: m.audio ? buildVoiceContent(m.content, m.audio) : m.content
-  }));
-  
-  apiMessages.push({
-    role: 'user',
-    content: buildVoiceContent('استمع ورد بسرعة وبالعامية المصرية.', { data: base64, mimeType })
-  });
+  const liveMessages = [
+    {
+      role: 'user',
+      content: [
+        { text: `استمع للرسالة الصوتية وافعل الآتي:
+1. حوّل كل اللي اتكلمته لنص مكتوب.
+2. ارد عليه بالعامية المصرية وكأنك علوق النخل، بسرعة وبشكل طبيعي.
+RESPOND ONLY WITH THIS JSON (no markdown, no extra text):
+{ "transcript": "النص المحوّل", "reply": "ردك" }` },
+        { inline_data: { mime_type: mimeType, data: base64 } }
+      ]
+    }
+  ];
 
   try {
-    const reply = await fetchChat({ messages: apiMessages });
-    chat.messages.push({ role: 'user', content: '🎤 رسالة صوتية (لايف)', time: now() });
+    $liveOrb.className = 'live-orb thinking';
+    $liveStatus.textContent = 'بفكر في الرد...';
+
+    const raw = await fetchChat({ messages: liveMessages });
+
+    let transcript = '🎤 رسالة صوتية';
+    let reply = raw;
+    try {
+      const cleaned = raw.replace(/^```json\n?/, '').replace(/```$/, '').trim();
+      const parsed = JSON.parse(cleaned);
+      transcript = parsed.transcript || transcript;
+      reply = parsed.reply || raw;
+    } catch { /* use raw as reply */ }
+
+    // Save to chat with real transcript
+    chat.messages.push({ role: 'user', content: `🎤 ${transcript}`, time: now() });
     chat.messages.push({ role: 'assistant', content: reply, time: now() });
     Storage.saveChats(state.chats);
     renderMessages();
+
+    // Speak the reply
     await speak(reply);
+
   } catch (err) {
     $liveStatus.textContent = 'حصلت مشكلة، حاول تاني';
     $liveOrb.className = 'live-orb listening';
