@@ -89,8 +89,8 @@ async function fetchGemini(messages, key) {
     ...userMessages
   ];
 
-  // Using Stable Gemini 1.5 Flash due to high demand on 2.5
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+  // Using Gemini 3.1 Flash-Lite (Current 2026 High-Efficiency Model)
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${key}`;
   
   return fetch(url, {
     method: "POST",
