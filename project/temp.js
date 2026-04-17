@@ -3,16 +3,35 @@
 const SYSTEM_PROMPT = `أنت "بدر AI" - مساعد ذكاء اصطناعي متطور متخصص فقط في المنهج المصري ومساعدة الطلاب في المذاكرة. بترد بالعامية المصرية وبأسلوب ودود يشجع الطلبة. ممنوع تتكلم في أي حاجة بره الدراسة والمنهج التعليمي.`;
 
 async function* streamChat({ messages }) {
-  // تذكر: يجب أن يكون الملف في مجلد اسمه api واسمه server.js
-  const response = await fetch('/api/server.js', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages })
-  });
+  let response;
   
+  try {
+    // 1. First attempt: trying the standard Vercel route
+    response = await fetch('/api/server', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages })
+    });
+
+    // 2. Fallback: If 404, try adding the .js extension explicitly
+    if (response.status === 404) {
+      response = await fetch('/api/server.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages })
+      });
+    }
+  } catch (e) {
+    throw new Error("حدث خطأ في الشبكة، تأكد من اتصالك.");
+  }
+
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`مشكلة في الاتصال: ${response.status}`);
+    // If it's still 404 after both tries, the folder structure is definitely wrong
+    if (response.status === 404) {
+      throw new Error("بدر AI مش لاقي ملف البرمجة. تأكد أن ملف server.js داخل مجلد اسمه api");
+    }
+    throw new Error(`مشكلة في السيرفر: ${response.status}`);
   }
 
   const reader = response.body.getReader();
@@ -24,6 +43,28 @@ async function* streamChat({ messages }) {
     if (done) break;
     
     buffer += decoder.decode(value, { stream: true });
+    
+    let lines = buffer.split('\n');
+    buffer = lines.pop(); 
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data:')) continue;
+      
+      const jsonStr = trimmed.replace('data: ', '');
+      if (jsonStr === '[DONE]') return;
+
+      try {
+        const data = JSON.parse(jsonStr);
+        // Supports both Gemini and standard OpenAI formats
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || data.choices?.[0]?.delta?.content;
+        if (text) yield text;
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+}
 
     let lines = buffer.split('\n');
     buffer = lines.pop(); 
