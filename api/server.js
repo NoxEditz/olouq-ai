@@ -428,13 +428,18 @@ export default async function handler(req, res) {
         avatar_url: profile.avatar
       };
 
-      const dbRes = await supabaseFetch('/profiles', {
+      const dbRes = await supabaseFetch('/profiles?on_conflict=user_id', {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' }
       });
 
       const result = await dbRes.json();
+      if (!dbRes.ok || result.error || result.code) {
+        console.error('Supabase save-profile error:', result);
+        throw new Error('فشل الحفظ في قاعدة البيانات');
+      }
+
       return res.status(200).json({ success: true, user: result[0] });
     } catch (err) {
       return res.status(500).json({ success: false, error: err.message });
