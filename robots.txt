@@ -1,0 +1,88 @@
+# robots.txt لموقع علوق الثانوية
+# https://olouq.vercel.app
+
+# السماح لجميع محركات البحث
+User-agent: *
+Allow: /
+
+# حظر صفحات إدارية أو مؤقتة (إذا وجدت)
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /private/
+Disallow: /*.json$
+
+# السماح بالوصول لملفات JavaScript و CSS
+Allow: /*.js$
+Allow: /*.css$
+Allow: /*.svg$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.webp$
+
+# محركات بحث محددة
+# Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 0
+
+# Yandex (روسيا)
+User-agent: Yandex
+Allow: /
+Crawl-delay: 1
+
+# Baidu (الصين)
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 1
+
+# Duck Duck Go
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 0
+
+# Facebook Bot
+User-agent: facebookexternalhit
+Allow: /
+
+# Twitter Bot
+User-agent: Twitterbot
+Allow: /
+
+# WhatsApp Bot (لمعاينة الروابط)
+User-agent: WhatsApp
+Allow: /
+
+# Telegram Bot
+User-agent: TelegramBot
+Allow: /
+
+# منع بعض الـ bots الضارة أو غير المرغوبة
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# خريطة الموقع
+Sitemap: https://olouq.vercel.app/sitemap.xml
+
+# معلومات إضافية
+# Host: olouq.vercel.app
+
+# ملاحظات:
+# - يتم تحديث هذا الملف بانتظام
+# - آخر تحديث: 2024-04-18
+# - للاستفسارات: contact@olouq.vercel.app

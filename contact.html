@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>اتصل بنا - علوق الثانوية</title>
+  <meta name="description" content="تواصل مع فريق علوق الثانوية لأي استفسارات أو مقترحات">
+  <meta name="theme-color" content="#020c04" />
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@200;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #070a08;
+      --bg1: #0a0f0c;
+      --bg2: #101813;
+      --bg3: #16221a;
+      --card: rgba(16, 24, 19, 0.6);
+      --border: rgba(0, 255, 65, 0.2);
+      --ng: #00e676;
+      --txt0: #f0fdf4;
+      --txt2: #86efac;
+      --radius: 14px;
+      --font-ui: 'Outfit', sans-serif;
+      --font-hd: 'Readex Pro', sans-serif;
+    }
+    body {
+      font-family: var(--font-ui), var(--font-hd), sans-serif;
+      background: var(--bg0);
+      color: var(--txt0);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+      padding: 40px 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .header h1 {
+      color: var(--ng);
+      font-size: 32px;
+    }
+    .contact-form {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--txt2);
+      font-weight: 600;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--txt0);
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--ng);
+      box-shadow: 0 0 10px rgba(0, 230, 118, 0.2);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--ng);
+      color: var(--bg0);
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .submit-btn:hover {
+      background: #00c853;
+    }
+    .back-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: transparent;
+      color: var(--txt2);
+      border: 1px solid var(--border);
+      text-decoration: none;
+      border-radius: var(--radius);
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    .back-btn:hover {
+      background: rgba(0, 255, 65, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>تواصل معنا</h1>
+      <p>يسعدنا سماع اقتراحاتك أو استفساراتك</p>
+    </div>
+    
+    <div class="contact-form">
+      <form id="contact-form" onsubmit="event.preventDefault(); alert('تم استلام رسالتك بنجاح! شكراً لتواصلك معنا.'); this.reset();">
+        <div class="form-group">
+          <label for="name">الاسم</label>
+          <input type="text" id="name" required placeholder="اسمك الكريم">
+        </div>
+        
+        <div class="form-group">
+          <label for="email">البريد الإلكتروني</label>
+          <input type="email" id="email" required placeholder="example@email.com">
+        </div>
+        
+        <div class="form-group">
+          <label for="message">الرسالة</label>
+          <textarea id="message" required placeholder="كيف يمكننا مساعدتك؟"></textarea>
+        </div>
+        
+        <button type="submit" class="submit-btn">إرسال الرسالة</button>
+      </form>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="/" class="back-btn">العودة للمنصة</a>
+    </div>
+  </div>
+</body>
+</html>
