@@ -452,6 +452,26 @@ export default async function handler(req, res) {
     }
   }
 
+  // 3b. Handle Update XP
+  if (action === 'update-xp') {
+    const { userId, xp, achievements_count } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: 'Missing userId' });
+    try {
+      const updateData = {};
+      if (xp !== undefined) updateData.xp = xp;
+      if (achievements_count !== undefined) updateData.achievements_count = achievements_count;
+      const dbRes = await supabaseFetch(`/profiles?user_id=eq.${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updateData),
+        headers: { 'Prefer': 'return=representation' }
+      });
+      const result = await dbRes.json();
+      return res.status(200).json({ success: true, user: result[0] });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
   // 4. Handle Chat (Original Logic)
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Invalid request format' });

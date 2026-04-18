@@ -6233,6 +6233,27 @@
     }
 
     // ── Add points (public API) ──
+    // ── Sync XP to Supabase (debounced, only for logged-in users) ──
+    let _xpSyncTimer = null;
+    function syncXPToServer() {
+      if (!state.user?.id) return; // Only sync if logged in
+      clearTimeout(_xpSyncTimer);
+      _xpSyncTimer = setTimeout(async () => {
+        try {
+          await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'update-xp',
+              userId: state.user.id,
+              xp: userProg.points,
+              achievements_count: userProg.achievements.length
+            })
+          });
+        } catch(e) { /* silent fail */ }
+      }, 3000); // Wait 3s after last point add before syncing
+    }
+
     window.addPoints = (amount, reason) => {
       userProg.points += amount;
       const newLevel = Math.floor(userProg.points / 500) + 1;
@@ -6244,7 +6265,9 @@
       showToast(`+${amount} نقطة: ${reason}`);
       announce(`حصلت على ${amount} نقطة`);
       checkAchievements();
+      syncXPToServer(); // Sync to leaderboard
     };
+
 
     // ── Render achievements list modal ──
     window.renderAchievements = () => {
