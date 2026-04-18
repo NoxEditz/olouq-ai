@@ -3041,6 +3041,94 @@
     </div>
   </div>
 
+  <!-- Profile Editor Modal -->
+  <div class="modal-overlay" id="profile-editor-modal">
+    <div class="modal-content" style="max-width:480px; padding:0; overflow:hidden; border-radius:20px;">
+      <!-- Header Banner -->
+      <div style="background:linear-gradient(135deg,#0a2e1a,#0d3d24); padding:30px 24px 60px; text-align:center; position:relative;">
+        <div class="modal-close" data-modal="profile-editor-modal" style="position:absolute;top:14px;left:14px;">✕</div>
+        <div style="font-size:18px;font-weight:700;color:var(--ng);">الملف الشخصي</div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:4px;">تعديل معلوماتك الشخصية</div>
+      </div>
+
+      <!-- Avatar floating over banner -->
+      <div style="text-align:center; margin-top:-50px; margin-bottom:16px; position:relative;">
+        <div style="position:relative; display:inline-block;">
+          <img id="profile-edit-avatar" src="" alt="avatar"
+            style="width:100px;height:100px;border-radius:50%;border:4px solid var(--ng);
+            box-shadow:0 0 30px rgba(0,230,118,0.4);object-fit:cover;background:#0d1f14;">
+          <!-- Upload overlay -->
+          <label for="profile-avatar-upload" style="
+            position:absolute;inset:0;border-radius:50%;
+            background:rgba(0,0,0,0.5);display:flex;align-items:center;
+            justify-content:center;cursor:pointer;opacity:0;transition:opacity 0.2s;
+            font-size:24px;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">📷</label>
+          <input type="file" id="profile-avatar-upload" accept="image/*" style="display:none;">
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
+          <button onclick="document.getElementById('profile-avatar-upload').click()"
+            style="padding:6px 14px;background:rgba(0,230,118,0.1);border:1px solid var(--ng);
+            border-radius:20px;color:var(--ng);font-size:12px;cursor:pointer;">
+            📷 رفع صورة
+          </button>
+          <button id="profile-random-avatar"
+            style="padding:6px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);
+            border-radius:20px;color:var(--txt2);font-size:12px;cursor:pointer;">
+            🎲 عشوائي
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div style="display:flex;gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:0 0 20px;">
+        <div style="flex:1;text-align:center;padding:12px 0;border-left:1px solid var(--border);">
+          <div style="font-size:20px;font-weight:800;color:var(--ng);" id="profile-xp-display">0</div>
+          <div style="font-size:11px;color:var(--txt2);">نقطة XP</div>
+        </div>
+        <div style="flex:1;text-align:center;padding:12px 0;border-left:1px solid var(--border);">
+          <div style="font-size:20px;font-weight:800;color:var(--ng);" id="profile-level-display">1</div>
+          <div style="font-size:11px;color:var(--txt2);">المستوى</div>
+        </div>
+        <div style="flex:1;text-align:center;padding:12px 0;">
+          <div style="font-size:20px;font-weight:800;color:var(--ng);" id="profile-achv-display">0</div>
+          <div style="font-size:11px;color:var(--txt2);">إنجاز</div>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div style="padding:0 24px 24px;">
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:12px;color:var(--txt2);margin-bottom:6px;font-weight:600;">اسم الشهرة *</label>
+          <input id="profile-edit-username" type="text" placeholder="اكتب اسمك هنا..."
+            style="width:100%;padding:12px;background:rgba(0,0,0,0.3);border:1px solid var(--border);
+            border-radius:10px;color:var(--txt0);font-size:15px;box-sizing:border-box;font-family:inherit;">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div>
+            <label style="display:block;font-size:12px;color:var(--txt2);margin-bottom:6px;font-weight:600;">المدينة</label>
+            <input id="profile-edit-city" type="text" placeholder="القاهرة"
+              style="width:100%;padding:10px;background:rgba(0,0,0,0.3);border:1px solid var(--border);
+              border-radius:10px;color:var(--txt0);font-size:14px;box-sizing:border-box;font-family:inherit;">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;color:var(--txt2);margin-bottom:6px;font-weight:600;">الدولة</label>
+            <input id="profile-edit-country" type="text" placeholder="مصر"
+              style="width:100%;padding:10px;background:rgba(0,0,0,0.3);border:1px solid var(--border);
+              border-radius:10px;color:var(--txt0);font-size:14px;box-sizing:border-box;font-family:inherit;">
+          </div>
+        </div>
+
+        <button id="profile-save-btn"
+          style="width:100%;padding:14px;background:linear-gradient(135deg,var(--ng),#00c853);
+          color:var(--bg0);border:none;border-radius:12px;font-size:16px;font-weight:700;
+          cursor:pointer;transition:all 0.3s;font-family:inherit;">
+          💾 حفظ التغييرات
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main App Container -->
   <div class="app-container hidden" id="app-container">
 
@@ -3062,13 +3150,16 @@
 
       <div class="sidebar-footer">
         <!-- User Profile -->
-        <div id="user-profile" class="user-profile-section hidden">
-          <img src="" alt="User" id="user-avatar" class="user-avatar">
+        <div id="user-profile" class="user-profile-section hidden" onclick="openProfileEditor()" style="cursor:pointer;" title="تعديل الملف الشخصي">
+          <div style="position:relative; display:inline-block;">
+            <img src="" alt="User" id="user-avatar" class="user-avatar">
+            <div style="position:absolute;bottom:0;left:0;background:var(--ng);border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--bg0);">✏️</div>
+          </div>
           <div class="user-info">
             <div id="user-name-display" class="user-name">اسم الطالب</div>
             <div id="user-location-display" class="user-email">القاهرة، مصر</div>
           </div>
-          <button class="logout-btn" id="logout-btn">خروج</button>
+          <button class="logout-btn" id="logout-btn" onclick="event.stopPropagation()">خروج</button>
         </div>
 
         <!-- Google Login Button (Hidden if logged in) -->
@@ -5656,6 +5747,91 @@
       completeAuthFlow();
       showToast('أهلاً بك كضيف! سجل دخولك لاحقاً لحفظ تقدمك');
     });
+
+    // ── Profile Editor ──────────────────────────────────
+    let _editAvatarData = null; // base64 or URL
+
+    window.openProfileEditor = () => {
+      if (!state.user) return;
+      const modal = document.getElementById('profile-editor-modal');
+      modal.classList.add('visible');
+
+      // Pre-fill fields
+      document.getElementById('profile-edit-username').value = state.user.username || state.user.name || '';
+      document.getElementById('profile-edit-city').value = state.user.city || '';
+      document.getElementById('profile-edit-country').value = state.user.country || '';
+      _editAvatarData = state.user.avatar || state.user.picture || '';
+      document.getElementById('profile-edit-avatar').src = _editAvatarData;
+
+      // Fill stats from gamification
+      const prog = JSON.parse(localStorage.getItem('olouq_gamification')) || { points: 0, level: 1, achievements: [] };
+      document.getElementById('profile-xp-display').textContent  = prog.points;
+      document.getElementById('profile-level-display').textContent = prog.level;
+      document.getElementById('profile-achv-display').textContent  = prog.achievements.length;
+    };
+
+    // Avatar file upload
+    document.getElementById('profile-avatar-upload')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) return showToast('الصورة أكبر من 2MB، اختر صورة أصغر', true);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        _editAvatarData = ev.target.result;
+        document.getElementById('profile-edit-avatar').src = _editAvatarData;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Random avatar
+    document.getElementById('profile-random-avatar')?.addEventListener('click', () => {
+      const seeds = ['Avery','Caleb','Daisy','Felix','Jade','Leo','Milo','Nora','Ruby','Zoe','Amir','Sara','Nabil'];
+      const seed = seeds[Math.floor(Math.random() * seeds.length)] + Math.floor(Math.random() * 999);
+      _editAvatarData = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+      document.getElementById('profile-edit-avatar').src = _editAvatarData;
+    });
+
+    // Save profile changes
+    document.getElementById('profile-save-btn')?.addEventListener('click', async () => {
+      const username = document.getElementById('profile-edit-username').value.trim();
+      const city    = document.getElementById('profile-edit-city').value.trim();
+      const country = document.getElementById('profile-edit-country').value.trim();
+
+      if (!username) return showToast('اسم الشهرة مطلوب', true);
+      if (!state.user?.id) return showToast('يجب تسجيل الدخول أولاً', true);
+
+      const btn = document.getElementById('profile-save-btn');
+      btn.textContent = '⏳ جاري الحفظ...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save-profile',
+            userId: state.user.id,
+            profile: { username, city, country, avatar: _editAvatarData, age: state.user.age }
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          state.user = { ...state.user, username, city, country, avatar: _editAvatarData };
+          Storage.save('alouq_user', state.user);
+          updateUserUI();
+          document.getElementById('profile-editor-modal').classList.remove('visible');
+          showToast('✅ تم حفظ التغييرات بنجاح!');
+        } else {
+          showToast('حدث خطأ أثناء الحفظ', true);
+        }
+      } catch (err) {
+        showToast('فشل الاتصال بالخادم', true);
+      } finally {
+        btn.textContent = '💾 حفظ التغييرات';
+        btn.disabled = false;
+      }
+    });
+
 
     // Start app removed (duplicate)
 
