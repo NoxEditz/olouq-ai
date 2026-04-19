@@ -1065,11 +1065,18 @@
       display: flex;
       gap: 12px;
       animation: slideIn 0.3s ease;
-      max-width: 100%;
+      width: 100%;
     }
 
+    /* In RTL: row starts from Right, row-reverse starts from Left */
     .message.user {
-      flex-direction: row-reverse;
+      flex-direction: row; /* Avatar on Right */
+      justify-content: flex-start;
+    }
+
+    .message.assistant {
+      flex-direction: row-reverse; /* Avatar on Left */
+      justify-content: flex-start;
     }
 
     .message-avatar {
@@ -1081,6 +1088,7 @@
       justify-content: center;
       font-size: 20px;
       flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
 
     .message.user .message-avatar {
@@ -1092,30 +1100,30 @@
     }
 
     .message-content {
-      flex: 1;
       background: rgba(16, 24, 19, 0.7);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border-md);
-      padding: 16px 20px;
-      max-width: 85%;
+      padding: 12px 18px;
+      max-width: 80%;
       position: relative;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
       transition: transform 0.2s ease;
+      word-wrap: break-word;
     }
 
     .message.user .message-content {
-      background: linear-gradient(135deg, rgba(187, 134, 252, .15), rgba(3, 218, 198, .15));
-      border-color: rgba(187, 134, 252, .3);
-      border-radius: 24px 24px 4px 24px;
-      /* Bubbly tail for user (RTL) */
+      background: linear-gradient(135deg, rgba(187, 134, 252, 0.12), rgba(3, 218, 198, 0.12));
+      border-color: rgba(187, 134, 252, 0.25);
+      border-radius: 20px 0 20px 20px;
+      text-align: right;
     }
 
     .message.assistant .message-content {
-      background: linear-gradient(135deg, rgba(0, 230, 118, .1), rgba(0, 191, 165, .05));
-      border-color: rgba(0, 230, 118, .2);
-      border-radius: 24px 24px 24px 4px;
-      /* Bubbly tail for assistant (RTL) */
+      background: linear-gradient(135deg, rgba(0, 230, 118, 0.08), rgba(0, 191, 165, 0.05));
+      border-color: rgba(0, 230, 118, 0.15);
+      border-radius: 0 20px 20px 20px;
+      text-align: right;
     }
 
     .message-content:hover {
