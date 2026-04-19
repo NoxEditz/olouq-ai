@@ -3939,9 +3939,12 @@
     // STORAGE FUNCTIONS
     // ═══════════════════════════════════════════════════
     const Storage = {
+      getChatKey: () => state.user ? `alouq_chats_${state.user.id}` : 'alouq_guest_chats',
+      getActiveChatKey: () => state.user ? `alouq_active_${state.user.id}` : 'alouq_active_guest',
+
       saveChats: (chats) => {
         try {
-          localStorage.setItem(STORAGE_KEYS.CHATS, JSON.stringify(chats));
+          localStorage.setItem(Storage.getChatKey(), JSON.stringify(chats));
         } catch (e) {
           console.error('Failed to save chats:', e);
         }
@@ -3949,7 +3952,7 @@
 
       loadChats: () => {
         try {
-          const data = localStorage.getItem(STORAGE_KEYS.CHATS);
+          const data = localStorage.getItem(Storage.getChatKey());
           return data ? JSON.parse(data) : [];
         } catch (e) {
           console.error('Failed to load chats:', e);
@@ -3958,11 +3961,11 @@
       },
 
       saveActiveChat: (id) => {
-        localStorage.setItem(STORAGE_KEYS.ACTIVE_CHAT, id);
+        localStorage.setItem(Storage.getActiveChatKey(), id);
       },
 
       loadActiveChat: () => {
-        return localStorage.getItem(STORAGE_KEYS.ACTIVE_CHAT);
+        return localStorage.getItem(Storage.getActiveChatKey());
       },
 
       saveSettings: (settings) => {
@@ -5614,7 +5617,14 @@
         if (data.success) {
           state.user = data.user;
           Storage.save('alouq_user', data.user);
+          
+          // Switch to user's chats
+          state.chats = Storage.loadChats();
+          state.activeChatId = Storage.loadActiveChat() || (state.chats[0]?.id || null);
+          
           updateUserUI();
+          renderChatList();
+          renderMessages();
           
           // If no profile data yet (new user), show profile setup
           if (!data.user.profile_complete) {
@@ -5720,30 +5730,33 @@
     };
 
     const logout = () => {
-      // Clear state
+      // Clear current session
+      if (!state.user) {
+         // If already guest, just clear temporary chats
+         localStorage.removeItem('alouq_guest_chats');
+         localStorage.removeItem('alouq_active_guest');
+      }
+
       state.user = null;
+      localStorage.removeItem('alouq_user');
+      
+      // Clear temporary guest storage on logout to keep them "temporary"
+      localStorage.removeItem('alouq_guest_chats');
+      localStorage.removeItem('alouq_active_guest');
+
+      // Reload state for guest mode
       state.chats = [];
       state.activeChatId = null;
-      
-      // Clear storage
-      localStorage.removeItem('alouq_user');
-      localStorage.removeItem('alouq_chats');
-      localStorage.removeItem('alouq_active_chat');
-      localStorage.removeItem('olouq_gamification'); // Reset progress too as it's tied to account
       
       // Update UI
       updateUserUI();
       renderChatList();
       renderMessages();
       
-      // Force back to login screen
-      $appContainer.classList.add('hidden');
-      document.getElementById('auth-screen').style.display = 'flex';
-      document.getElementById('auth-step-login').classList.remove('hidden');
-      document.getElementById('auth-step-profile').classList.add('hidden');
-      
-      showToast('تم تسجيل الخروج بنجاح');
+      showToast('تم تسجيل الخروج. أنت الآن في وضع الضيف (المحادثات مؤقتة)');
       if (window.google) google.accounts.id.disableAutoSelect();
+      
+      // We do NOT hide the app anymore, allowing guest usage.
     };
 
     // Leaderboard Logic
