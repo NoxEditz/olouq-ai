@@ -5720,15 +5720,38 @@
     };
 
     const logout = () => {
+      // Clear state
       state.user = null;
+      state.chats = [];
+      state.activeChatId = null;
+      
+      // Clear storage
       localStorage.removeItem('alouq_user');
+      localStorage.removeItem('alouq_chats');
+      localStorage.removeItem('alouq_active_chat');
+      localStorage.removeItem('olouq_gamification'); // Reset progress too as it's tied to account
+      
+      // Update UI
       updateUserUI();
+      renderChatList();
+      renderMessages();
+      
+      // Force back to login screen
+      $appContainer.classList.add('hidden');
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('auth-step-login').classList.remove('hidden');
+      document.getElementById('auth-step-profile').classList.add('hidden');
+      
       showToast('تم تسجيل الخروج بنجاح');
-      google.accounts.id.disableAutoSelect();
+      if (window.google) google.accounts.id.disableAutoSelect();
     };
 
     // Leaderboard Logic
     const openLeaderboard = async () => {
+      if (!state.user) {
+        showToast('يا بطل، لازم تسجل دخولك عشان تشوف لوحة المتصدرين وتنافسهم! 🏆', 'warn');
+        return;
+      }
       document.getElementById('leaderboard-modal').classList.add('visible');
       const $list = document.getElementById('leaderboard-list');
       $list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--txt3);">جاري التحميل... ⏳</div>';

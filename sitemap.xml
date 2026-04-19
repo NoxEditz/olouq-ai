@@ -139,33 +139,27 @@
   -->
 
   <!-- صفحة حول المنصة -->
-  <!--
   <url>
-    <loc>https://olouq.vercel.app/about</loc>
+    <loc>https://olouq.vercel.app/about.html</loc>
     <lastmod>2024-04-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  -->
 
   <!-- صفحة الاتصال -->
-  <!--
   <url>
-    <loc>https://olouq.vercel.app/contact</loc>
+    <loc>https://olouq.vercel.app/contact.html</loc>
     <lastmod>2024-04-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
-  -->
 
   <!-- صفحة الأسئلة الشائعة -->
-  <!--
   <url>
-    <loc>https://olouq.vercel.app/faq</loc>
+    <loc>https://olouq.vercel.app/faq.html</loc>
     <lastmod>2024-04-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  -->
 
 </urlset>
