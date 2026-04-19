@@ -4221,7 +4221,7 @@
       try {
         const reply = await fetchChat({
           messages: [
-            { role: 'system', content: 'أنت "علوق"، المساعد التعليمي الأذكى لطلاب الثانوية في مصر. رد دايماً بالعامية المصرية الودودة، وممكن تستخدم الإنجليزي في الضرورة بس (زي المصطلحات العلمية). خلي إجابتك ذكية وبتشجع الطالب.' },
+            { role: 'system', content: 'أنت "علوق"، المساعد التعليمي الأذكى لطلاب الثانوية في مصر. رد دايماً بالعامية المصرية الودودة، وممكن تستخدم الإنجليزي في الضرورة بس (زي المصطلحات العلمية). ممنوع تماماً استخدام أي لغة تانية (زي الهندي أو الصيني أو غيرهم). خلي إجابتك ذكية وبتشجع الطالب.' },
             { role: 'user', content: `${prompt}\n\nسياق الأداة: ${toolContext}` }
           ]
         });
@@ -4461,10 +4461,20 @@
     // ═══════════════════════════════════════════════════
     const fetchChat = async (payload) => {
       try {
+        const finalPayload = { ...payload };
+        const systemPrompt = { 
+          role: 'system', 
+          content: 'أنت "علوق"، المساعد التعليمي الأذكى لطلاب الثانوية في مصر. رد دايماً بالعامية المصرية الودودة، وممكن تستخدم الإنجليزي في الضرورة بس (زي المصطلحات العلمية). ممنوع استخدام أي لغة أخرى نهائياً (مثل الهندي أو الصيني). ركز على المنهج المصري.' 
+        };
+        
+        if (!finalPayload.messages.some(m => m.role === 'system')) {
+          finalPayload.messages = [systemPrompt, ...finalPayload.messages];
+        }
+
         const response = await fetch(API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(finalPayload)
         });
 
         if (!response.ok) {
